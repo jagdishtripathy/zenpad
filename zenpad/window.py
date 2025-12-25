@@ -2,7 +2,7 @@ from gi.repository import Gtk, Pango, Gdk, Gio, GLib
 import os
 import json
 from .editor import EditorTab
-from .preferences import PreferencesDialog
+from zenpad.preferences import PreferencesDialog, Settings
 from gi.repository import GtkSource
 
 class ZenpadWindow(Gtk.ApplicationWindow):
@@ -24,27 +24,37 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         self.set_titlebar(header)
         
         # Main Layout Box
+        # Main Layout Box
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(main_box)
 
-        # Search State
+        # Core Components
+        self.settings = Settings()
+        
+        # State
+        self.search_settings = GtkSource.SearchSettings()
+        self.search_context = None
         self.incremental_search = True
         self.highlight_all = True
         
-        # View State
-        self.show_line_numbers = True
+        # History
+        self.closed_tabs = []
+        
+        # View State (Loaded from Settings)
+        self.show_line_numbers = self.settings.get("show_line_numbers")
         self.show_menubar = True
         self.show_toolbar = True
         self.show_statusbar = True
         self.is_fullscreen = False
         
-        # Document State
-        self.doc_word_wrap = True
-        self.doc_auto_indent = True
-        self.doc_tab_size = 4
+        # Document State (Loaded from Settings)
+        self.doc_word_wrap = self.settings.get("word_wrap")
+        self.doc_auto_indent = self.settings.get("auto_indent")
+        self.doc_tab_size = self.settings.get("tab_width")
+        self.doc_use_spaces = self.settings.get("use_spaces")
         self.doc_write_bom = False
         self.doc_viewer_mode = False
-        self.doc_line_ending = "Current" # Placeholder
+        self.doc_line_ending = "Current"
         
         # 1. Menu Bar
 
@@ -163,11 +173,18 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         detach_item.connect("activate", self.on_detach_tab)
         file_menu.append(detach_item)
         
+        # Reopen Closed Tab
+        reopen_item = Gtk.MenuItem(label="Reopen Closed Tab")
+        reopen_item.connect("activate", self.on_reopen_tab)
+        reopen_item.add_accelerator("activate", self.accel_group, Gdk.KEY_t, Gdk.ModifierType.SHIFT_MASK | Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
+        file_menu.append(reopen_item)
+        
         # Close Tab
         close_tab_item = Gtk.ImageMenuItem(label="Close Tab")
         close_tab_item.set_image(Gtk.Image.new_from_icon_name("window-close", Gtk.IconSize.MENU))
         close_tab_item.set_always_show_image(True)
         close_tab_item.connect("activate", self.on_close_current_tab)
+        close_tab_item.add_accelerator("activate", self.accel_group, Gdk.KEY_w, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(close_tab_item)
         
         # Close Window
@@ -235,7 +252,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
         del_line_item = Gtk.MenuItem(label="Delete Line")
         del_line_item.connect("activate", self.on_delete_line)
-        del_line_item.add_accelerator("activate", self.accel_group, Gdk.KEY_Delete, Gdk.ModifierType.SHIFT_MASK | Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
+        del_line_item.add_accelerator("activate", self.accel_group, Gdk.KEY_k, Gdk.ModifierType.SHIFT_MASK | Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         edit_menu.append(del_line_item)
 
         edit_menu.append(Gtk.SeparatorMenuItem())
@@ -255,10 +272,12 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         to_upper = Gtk.MenuItem(label="To Uppercase")
         to_upper.connect("activate", lambda w: self.on_change_case("upper"))
+        to_upper.add_accelerator("activate", self.accel_group, Gdk.KEY_u, Gdk.ModifierType.SHIFT_MASK | Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         convert_menu.append(to_upper)
         
         to_lower = Gtk.MenuItem(label="To Lowercase")
         to_lower.connect("activate", lambda w: self.on_change_case("lower"))
+        to_lower.add_accelerator("activate", self.accel_group, Gdk.KEY_l, Gdk.ModifierType.SHIFT_MASK | Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         convert_menu.append(to_lower)
         
         to_title = Gtk.MenuItem(label="To Title Case")
@@ -274,12 +293,12 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
         move_up = Gtk.MenuItem(label="Line Up")
         move_up.connect("activate", lambda w: self.on_move_line("up"))
-        move_up.add_accelerator("activate", self.accel_group, Gdk.KEY_Up, Gdk.ModifierType.MOD1_MASK, Gtk.AccelFlags.VISIBLE) # Alt+Up
+        move_up.add_accelerator("activate", self.accel_group, Gdk.KEY_Up, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE) 
         move_menu.append(move_up)
 
         move_down = Gtk.MenuItem(label="Line Down")
         move_down.connect("activate", lambda w: self.on_move_line("down"))
-        move_down.add_accelerator("activate", self.accel_group, Gdk.KEY_Down, Gdk.ModifierType.MOD1_MASK, Gtk.AccelFlags.VISIBLE) # Alt+Down
+        move_down.add_accelerator("activate", self.accel_group, Gdk.KEY_Down, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE) 
         move_menu.append(move_down)
         
         edit_menu.append(move_item)
@@ -287,6 +306,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         # Duplicate
         dup_item = Gtk.MenuItem(label="Duplicate Line / Selection")
         dup_item.connect("activate", self.on_duplicate)
+        dup_item.add_accelerator("activate", self.accel_group, Gdk.KEY_d, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         edit_menu.append(dup_item)
 
         # Indent
@@ -299,13 +319,49 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         indent_dec.connect("activate", lambda w: self.on_indent(False))
         indent_dec.add_accelerator("activate", self.accel_group, Gdk.KEY_u, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         edit_menu.append(indent_dec)
+        
+        edit_menu.append(Gtk.SeparatorMenuItem())
+        
+        # Sort Lines
+        sort_item = Gtk.MenuItem(label="Sort Lines")
+        sort_item.connect("activate", self.on_sort_lines)
+        edit_menu.append(sort_item)
+        
+        # Join Lines
+        join_item = Gtk.MenuItem(label="Join Lines")
+        join_item.connect("activate", self.on_join_lines)
+        join_item.add_accelerator("activate", self.accel_group, Gdk.KEY_j, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
+        edit_menu.append(join_item)
+        
+        # Toggle Comment
+        comment_item = Gtk.MenuItem(label="Toggle Comment")
+        comment_item.connect("activate", self.on_toggle_comment)
+        comment_item.add_accelerator("activate", self.accel_group, Gdk.KEY_slash, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
+        edit_menu.append(comment_item)
+        
+        # Trim Trailing Whitespace
+        trim_item = Gtk.MenuItem(label="Trim Trailing Whitespace")
+        trim_item.connect("activate", self.on_trim_whitespace)
+        edit_menu.append(trim_item)
+        
+        edit_menu.append(Gtk.SeparatorMenuItem())
+        
+        # Insert Date/Time
+        date_item = Gtk.MenuItem(label="Insert Date/Time")
+        date_item.connect("activate", self.on_insert_date)
+        date_item.add_accelerator("activate", self.accel_group, Gdk.KEY_F5, 0, Gtk.AccelFlags.VISIBLE)
+        edit_menu.append(date_item)
 
         edit_menu.append(Gtk.SeparatorMenuItem())
         
         pref_item = Gtk.ImageMenuItem(label="Preferences...")
         pref_item.set_image(Gtk.Image.new_from_icon_name("preferences-system", Gtk.IconSize.MENU))
         pref_item.set_always_show_image(True)
+        pref_item = Gtk.ImageMenuItem(label="Preferences...")
+        pref_item.set_image(Gtk.Image.new_from_icon_name("preferences-system", Gtk.IconSize.MENU))
+        pref_item.set_always_show_image(True)
         pref_item.connect("activate", self.on_preferences_clicked)
+        pref_item.add_accelerator("activate", self.accel_group, Gdk.KEY_comma, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         edit_menu.append(pref_item)
         
         menubar.append(edit_item)
@@ -450,6 +506,13 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         zoom_out_item.connect("activate", self.on_zoom_out)
         zoom_out_item.add_accelerator("activate", self.accel_group, Gdk.KEY_minus, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         view_menu.append(zoom_out_item)
+        
+        zoom_reset_item = Gtk.ImageMenuItem(label="Reset Zoom")
+        zoom_reset_item.set_image(Gtk.Image.new_from_icon_name("zoom-original", Gtk.IconSize.MENU))
+        zoom_reset_item.set_always_show_image(True)
+        zoom_reset_item.connect("activate", self.on_zoom_reset)
+        zoom_reset_item.add_accelerator("activate", self.accel_group, Gdk.KEY_0, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
+        view_menu.append(zoom_reset_item)
         
         menubar.append(view_item)
 
@@ -926,6 +989,12 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             editor = self.notebook.get_nth_page(i)
             editor.zoom_out()
 
+    def on_zoom_reset(self, widget=None, param=None):
+        n_pages = self.notebook.get_n_pages()
+        for i in range(n_pages):
+            editor = self.notebook.get_nth_page(i)
+            editor.zoom_reset()
+
     def on_select_font(self, widget):
         dialog = Gtk.FontChooserDialog(title="Select Font", parent=self)
         if self.notebook.get_n_pages() > 0:
@@ -1245,6 +1314,18 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             ("quit", lambda *args: self.get_application().quit())
         ]
 
+        # Helper Actions for shortcuts
+        actions.extend([
+            ("zoom_reset", self.on_zoom_reset),
+            ("toc_upper", lambda *args: self.on_change_case("upper")),
+            ("toc_lower", lambda *args: self.on_change_case("lower")),
+            ("duplicate", self.on_duplicate),
+            ("delete_line", self.on_delete_line),
+            ("move_up", lambda *args: self.on_move_line("up")),
+            ("move_down", lambda *args: self.on_move_line("down")),
+            ("preferences", lambda *args: self.on_preferences_clicked(None))
+        ])
+
         for name, callback in actions:
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", callback)
@@ -1275,6 +1356,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         app.set_accels_for_action("win.reload", ["F5"])
         app.set_accels_for_action("win.print", ["<Primary>p"])
         app.set_accels_for_action("win.detach_tab", ["<Primary>d"])
+        app.set_accels_for_action("win.reopen_tab", ["<Primary><Shift>t"])
         app.set_accels_for_action("win.find", ["<Primary>f"])
         app.set_accels_for_action("win.replace", ["<Primary>h"])
         app.set_accels_for_action("win.find_replace", ["<Primary>r"])
@@ -1287,11 +1369,19 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         app.set_accels_for_action("win.redo", ["<Primary>y", "<Primary><Shift>z"])
         app.set_accels_for_action("win.zoom_in", ["<Primary>plus", "<Primary>equal"])
         app.set_accels_for_action("win.zoom_out", ["<Primary>minus"])
+        app.set_accels_for_action("win.zoom_reset", ["<Primary>0"])
         app.set_accels_for_action("win.toggle_menubar", ["<Primary>m"])
         app.set_accels_for_action("win.toggle_fullscreen", ["F11"])
         app.set_accels_for_action("win.close_tab", ["<Primary>w"])
         app.set_accels_for_action("win.close_window", ["<Primary><Shift>w"])
         app.set_accels_for_action("win.quit", ["<Primary>q"])
+        app.set_accels_for_action("win.toc_upper", ["<Primary><Shift>u"])
+        app.set_accels_for_action("win.toc_lower", ["<Primary><Shift>l"])
+        app.set_accels_for_action("win.duplicate", ["<Primary>d"])
+        app.set_accels_for_action("win.delete_line", ["<Primary><Shift>k"])
+        app.set_accels_for_action("win.move_up", ["<Primary>Up"])
+        app.set_accels_for_action("win.move_down", ["<Primary>Down"])
+        app.set_accels_for_action("win.preferences", ["<Primary>comma"])
 
     def on_new_window(self, widget, param=None):
         app = self.get_application()
@@ -1400,21 +1490,24 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         else:
             editor.file_path = None
         
-        # Tab Label with Close Button
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        box.set_spacing(5)
+        # Tab Label (with close button)
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         label = Gtk.Label(label=title)
-        box.pack_start(label, True, True, 0)
+        hbox.pack_start(label, True, True, 0)
         
-        close_btn = Gtk.Button.new_from_icon_name("window-close-symbolic", Gtk.IconSize.MENU)
+        close_btn = Gtk.Button.new_from_icon_name("window-close", Gtk.IconSize.MENU)
         close_btn.set_relief(Gtk.ReliefStyle.NONE)
-        # We need to capture the editor widget or page num to close correctly
-        # However, page num changes. Using the child widget 'editor' is safer.
         close_btn.connect("clicked", lambda btn: self.on_close_clicked(editor))
-        box.pack_start(close_btn, False, False, 0)
-        box.show_all()
+        hbox.pack_start(close_btn, False, False, 0)
+        hbox.show_all()
         
-        self.notebook.append_page(editor, box)
+        # EventBox for Right Click
+        event_box = Gtk.EventBox()
+        event_box.add(hbox)
+        event_box.connect("button-press-event", self.on_tab_button_press, editor)
+        event_box.show_all()
+        
+        self.notebook.append_page(editor, event_box)
         self.notebook.show_all()
         
         # Connect signals
@@ -1432,14 +1525,27 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         page_num = self.notebook.page_num(editor)
         if page_num == -1: return
         
-        tab_box = self.notebook.get_tab_label(editor)
-        children = tab_box.get_children()
+        tab_widget = self.notebook.get_tab_label(editor)
+        
+        # Determine if it's the EventBox wrapper or the Box directly
+        if isinstance(tab_widget, Gtk.EventBox):
+            hbox = tab_widget.get_child()
+        else:
+            hbox = tab_widget
+            
+        children = hbox.get_children()
         if children:
              label = children[0]
              name = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
-             if editor.buffer.get_modified():
-                 name = f"*{name}"
+             # Removed * from tab label
              label.set_text(name)
+             if editor.file_path:
+                 # Update tooltip
+                 tab_widget.set_tooltip_text(editor.file_path)
+        
+        # Update Window Title if this is the current tab
+        if page_num == self.notebook.get_current_page():
+            self.update_title(editor)
 
     def update_match_count(self, editor):
         # Only update if it's the current tab
@@ -1521,18 +1627,52 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             file_path = dialog.get_filename()
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                self.add_tab(content, os.path.basename(file_path), file_path)
-                
-                # Add to Recent
-                manager = Gtk.RecentManager.get_default()
-                manager.add_item("file://" + file_path)
-            except Exception as e:
-                print(f"Error opening file: {e}")
+            self.open_file_from_path(file_path)
         
         dialog.destroy()
+
+    def open_file_from_path(self, file_path):
+        if not os.path.exists(file_path):
+             print(f"File not found: {file_path}")
+             return
+
+        try:
+            # Try UTF-8 first
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.add_tab(content, os.path.basename(file_path), file_path)
+            
+            # Add to Recent
+            manager = Gtk.RecentManager.get_default()
+            manager.add_item("file://" + file_path)
+            
+        except UnicodeDecodeError:
+            # Fallback to Latin-1 or other permissive encoding
+            print(f"UTF-8 decode failed for {file_path}, trying ISO-8859-1")
+            try:
+                with open(file_path, "r", encoding="iso-8859-1") as f:
+                    content = f.read()
+                
+                # Warn user
+                dlg = Gtk.MessageDialog(parent=self, modal=True, message_type=Gtk.MessageType.WARNING,
+                                        buttons=Gtk.ButtonsType.OK, text="Encoding Warning")
+                dlg.format_secondary_text(f"The file '{os.path.basename(file_path)}' could not be opened as UTF-8.\nOpened using ISO-8859-1 fallback. Some characters may display incorrectly.")
+                dlg.run()
+                dlg.destroy()
+                
+                self.add_tab(content, os.path.basename(file_path), file_path)
+            except Exception as e:
+                self.show_error(f"Error opening binary/incompatible file: {e}")
+                
+        except Exception as e:
+            self.show_error(f"Error opening file: {e}")
+
+    def show_error(self, message):
+        dlg = Gtk.MessageDialog(parent=self, modal=True, message_type=Gtk.MessageType.ERROR,
+                                buttons=Gtk.ButtonsType.OK, text="Error")
+        dlg.format_secondary_text(message)
+        dlg.run()
+        dlg.destroy()
 
     def on_save_file(self, widget, param=None):
         page_num = self.notebook.get_current_page()
@@ -1564,16 +1704,6 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             manager = Gtk.RecentManager.get_default()
             manager.add_item("file://" + file_path)
             
-            # Update Tab Label
-            page_num = self.notebook.get_current_page()
-            
-            # Label is now a Box, so we need to find the Label child
-            tab_box = self.notebook.get_tab_label(editor)
-            # Assuming first child is label (as packed)
-            children = tab_box.get_children()
-            if children:
-                children[0].set_text(os.path.basename(file_path))
-            
         dialog.destroy()
 
     def save_to_path(self, editor, path):
@@ -1585,8 +1715,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             editor.buffer.set_modified(False) # Mark as saved
             editor.detect_language(path)
             self.update_tab_label(editor)
+        except PermissionError:
+            self.show_error(f"Permission denied: Cannot write to '{path}'.\nCheck file permissions or run as administrator.")
         except Exception as e:
-            print(f"Error saving file: {e}")
+            self.show_error(f"Error saving file: {e}")
 
     def check_unsaved_changes(self, editor):
         if editor.buffer.get_modified():
@@ -1629,6 +1761,8 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
     def close_tab(self, page_num):
         editor = self.notebook.get_nth_page(page_num)
+        if editor.file_path:
+             self.closed_tabs.append((editor.file_path, editor.get_cursor_position()))
         self.notebook.remove_page(page_num)
         # If no pages, maybe new tab? or empty?
         if self.notebook.get_n_pages() == 0:
@@ -1650,8 +1784,14 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         self.current_cursor_handler = editor.buffer.connect("notify::cursor-position", lambda w, p: self.update_statusbar(editor))
         
         # Update window title
+        self.update_title(editor)
+
+    def update_title(self, editor):
         filename = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
-        self.set_title(f"{filename} - Zenpad")
+        if editor.buffer.get_modified():
+            self.set_title(f"*{filename} - Zenpad")
+        else:
+            self.set_title(f"{filename} - Zenpad")
 
 
     def update_statusbar(self, editor):
@@ -1675,19 +1815,42 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         dialog.destroy()
 
     def apply_setting(self, key, value):
+        # Update local state if variable exists
+        if key == "show_line_numbers": self.show_line_numbers = value
+        elif key == "word_wrap": self.doc_word_wrap = value
+        elif key == "auto_indent": self.doc_auto_indent = value
+        elif key == "tab_width": self.doc_tab_size = int(value)
+        elif key == "use_spaces": self.doc_use_spaces = value
+        
         # Iterate over all tabs and apply setting
         n_pages = self.notebook.get_n_pages()
         for i in range(n_pages):
             editor = self.notebook.get_nth_page(i)
-            if key == "line_numbers":
-                editor.view.set_show_line_numbers(value)
+            view = editor.view
+            
+            if key == "line_numbers" or key == "show_line_numbers":
+                view.set_show_line_numbers(value)
             elif key == "word_wrap":
-                editor.view.set_wrap_mode(Gtk.WrapMode.WORD if value else Gtk.WrapMode.NONE)
+                view.set_wrap_mode(Gtk.WrapMode.WORD if value else Gtk.WrapMode.NONE)
+            elif key == "highlight_current_line":
+                view.set_highlight_current_line(value)
+            elif key == "auto_indent":
+                view.set_auto_indent(value)
+            elif key == "tab_width":
+                view.set_tab_width(int(value))
+            elif key == "use_spaces":
+                view.set_insert_spaces_instead_of_tabs(value)
             elif key == "theme":
                 editor.set_scheme(value)
             elif key == "font":
                 font_desc = Pango.FontDescription(value)
                 editor.view.modify_font(font_desc)
+                editor.font_desc = font_desc # Update editor's stored desc
+            elif key == "editor_padding":
+                pad_map = {"small": 2, "normal": 6, "large": 12}
+                margin = pad_map.get(value, 6)
+                view.set_left_margin(margin)
+                view.set_right_margin(margin)
 
         # Also store these settings to persistence if needed (not implemented yet)
 
@@ -1751,7 +1914,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         about.set_program_name("Zenpad")
         about.set_version("0.1.0")
         about.set_copyright("Copyright \u00A9 2025 - Zenpad Developers")
-        about.set_comments("Zenpad is a simple text editor for the Linux desktop environment.\n\n")
+        about.set_comments("Zenpad is a modern, lightweight, and efficient text editor for Linux.\nDesigned for speed and simplicity.\n\n")
         about.set_website("https://github.com/jagdishtripathy/zenpad")
         about.set_website_label("Website")
         
@@ -1765,3 +1928,207 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         about.run()
         about.destroy()
+
+    def on_reopen_tab(self, widget):
+        if self.closed_tabs:
+            path, cursor = self.closed_tabs.pop()
+            if os.path.exists(path):
+                # Check if already open
+                n_pages = self.notebook.get_n_pages()
+                for i in range(n_pages):
+                    editor = self.notebook.get_nth_page(i)
+                    if editor.file_path == path:
+                        self.notebook.set_current_page(i)
+                        return
+                
+                # Open it
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                self.add_tab(content, os.path.basename(path), path)
+            else:
+                print(f"File not found: {path}")
+
+    def on_insert_date(self, widget):
+        import datetime
+        page_num = self.notebook.get_current_page()
+        if page_num != -1:
+            editor = self.notebook.get_nth_page(page_num)
+            text = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            editor.buffer.insert_at_cursor(text)
+
+    def on_sort_lines(self, widget):
+        self._modify_selected_lines(lambda lines: sorted(lines))
+
+    def on_join_lines(self, widget):
+        page_num = self.notebook.get_current_page()
+        if page_num != -1:
+             editor = self.notebook.get_nth_page(page_num)
+             buff = editor.buffer
+             if buff.get_has_selection():
+                 start, end = buff.get_selection_bounds()
+                 text = buff.get_text(start, end, True)
+                 new_text = " ".join([line.strip() for line in text.splitlines()])
+                 buff.begin_user_action()
+                 buff.delete(start, end)
+                 buff.insert(start, new_text)
+                 buff.end_user_action()
+
+    def on_trim_whitespace(self, widget):
+         self._modify_all_lines(lambda line: line.rstrip())
+
+    def on_toggle_comment(self, widget):
+        page_num = self.notebook.get_current_page()
+        if page_num != -1:
+            editor = self.notebook.get_nth_page(page_num)
+            
+            # Simple Comment Map
+            lang = editor.buffer.get_language()
+            comment_char = "#"
+            if lang:
+                lid = lang.get_id()
+                if lid in ["c", "cpp", "java", "javascript", "css", "c-sharp"]:
+                    comment_char = "//"
+                elif lid in ["html", "xml"]:
+                    comment_char = "<!--" # Partial support...
+                elif lid == "sql":
+                    comment_char = "--"
+            
+            self._modify_selected_lines(lambda lines: self._toggle_comment_lines(lines, comment_char))
+
+    def _toggle_comment_lines(self, lines, char):
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith(char):
+                # Uncomment - Naive
+                new_lines.append(line.replace(char, "", 1))
+            else:
+                new_lines.append(char + " " + line)
+        return new_lines
+
+    def _modify_selected_lines(self, func):
+        page_num = self.notebook.get_current_page()
+        if page_num != -1:
+            editor = self.notebook.get_nth_page(page_num)
+            buff = editor.buffer
+            
+            start, end = buff.get_selection_bounds() if buff.get_has_selection() else (buff.get_start_iter(), buff.get_end_iter()) 
+            
+            # If no selection, select current line
+            if not buff.get_has_selection():
+                 insert = buff.get_insert()
+                 iter_curr = buff.get_iter_at_mark(insert)
+                 start = buff.get_iter_at_line(iter_curr.get_line())
+                 end = start.copy()
+                 end.forward_to_line_end()
+            
+            # Extend to line starts/ends
+            if not start.starts_line():
+                start.set_line(start.get_line())
+            if not end.ends_line():
+                end.forward_to_line_end()
+                
+            text = buff.get_text(start, end, True)
+            lines = text.splitlines(keepends=True)
+            
+            lines_stripped = text.splitlines()
+            processed = func(lines_stripped)
+            new_text = "\n".join(processed)
+            if text.endswith("\n") and not new_text.endswith("\n"):
+                 new_text += "\n"
+            
+            buff.begin_user_action()
+            buff.delete(start, end)
+            buff.insert(start, new_text)
+            buff.end_user_action()
+
+    def _modify_all_lines(self, func):
+        page_num = self.notebook.get_current_page()
+        if page_num != -1:
+            editor = self.notebook.get_nth_page(page_num)
+            buff = editor.buffer
+            text = buff.get_text(buff.get_start_iter(), buff.get_end_iter(), True)
+            lines = text.splitlines()
+            processed = [func(l) for l in lines]
+            new_text = "\n".join(processed)
+            if text.endswith("\n"): new_text += "\n"
+            
+            buff.begin_user_action()
+            buff.set_text(new_text)
+            buff.end_user_action()
+
+    def on_tab_button_press(self, widget, event, editor):
+        if event.button == 3: # Right Click
+            menu = Gtk.Menu()
+            
+            # Rename (Save As)
+            rename_item = Gtk.MenuItem(label="Rename File...")
+            rename_item.connect("activate", lambda w: self.save_file_as(editor))
+            menu.append(rename_item)
+            
+            menu.append(Gtk.SeparatorMenuItem())
+            
+            # Close
+            close_item = Gtk.MenuItem(label="Close Tab")
+            close_item.connect("activate", lambda w: self.on_close_clicked(editor))
+            menu.append(close_item)
+            
+            # Close Others
+            close_others = Gtk.MenuItem(label="Close Other Tabs")
+            close_others.connect("activate", lambda w: self.on_close_others(editor))
+            menu.append(close_others)
+            
+            menu.append(Gtk.SeparatorMenuItem())
+            
+            # Copy Path
+            copy_path = Gtk.MenuItem(label="Copy File Path")
+            copy_path.connect("activate", lambda w: self.on_copy_path(editor))
+            menu.append(copy_path)
+            
+            # Open Containing Folder
+            open_folder = Gtk.MenuItem(label="Open Containing Folder")
+            open_folder.connect("activate", lambda w: self.on_open_folder(editor))
+            menu.append(open_folder)
+            
+            menu.show_all()
+            menu.attach_to_widget(widget, None) # Associate with the EventBox
+            
+            # Use popup_at_pointer for better Wayland/GTK3.22+ support
+            # Fallback to old popup if not available (rare in modern envs)
+            if hasattr(menu, "popup_at_pointer"):
+                menu.popup_at_pointer(event)
+            else:
+                menu.popup(None, None, None, None, event.button, event.time)
+            
+            return True
+        return False
+
+    def on_close_others(self, target_editor):
+        n_pages = self.notebook.get_n_pages()
+        # Iterate backwards to avoid index shifting issues
+        for i in range(n_pages - 1, -1, -1):
+            editor = self.notebook.get_nth_page(i)
+            if editor != target_editor:
+                if self.check_unsaved_changes(editor):
+                    self.close_tab(i)
+
+    def on_copy_path(self, editor):
+        if editor.file_path:
+            clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+            clipboard.set_text(editor.file_path, -1)
+        else:
+            print("No file path to copy")
+
+    def on_open_folder(self, editor):
+        if editor.file_path:
+            folder = os.path.dirname(editor.file_path)
+            if os.path.exists(folder):
+                try:
+                    # Generic open for Linux/Windows/Mac
+                    if os.name == 'nt':
+                        os.startfile(folder)
+                    else:
+                        subprocess = __import__('subprocess')
+                        opener = 'xdg-open'
+                        subprocess.call([opener, folder])
+                except Exception as e:
+                     print(f"Error opening folder: {e}")

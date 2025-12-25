@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="zenpad",
     version="0.1.0",
-    description="A lightweight text editor (Mousepad clone) with extra features.",
+    description="A modern, lightweight text editor with features for coding and general use.",
     author="Zenpad Team",
     packages=find_packages(),
     entry_points={

@@ -10,13 +10,30 @@ from .window import ZenpadWindow
 class ZenpadApplication(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.zenpad.editor",
-                         flags=Gio.ApplicationFlags.FLAGS_NONE)
+                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self.window = None
+        Gtk.Window.set_default_icon_name("accessories-text-editor")
 
     def do_activate(self):
         if not self.window:
             self.window = ZenpadWindow(application=self)
         self.window.present()
+
+    def do_command_line(self, command_line):
+        self.activate()
+        args = command_line.get_arguments()
+        
+        # Args[0] is usually the program name, files follow
+        if len(args) > 1:
+            for filename in args[1:]:
+                # We need to tell the window to open this file
+                # Since window logic for opening is inside ZenpadWindow, we'll expose a method or reuse on_open_file logic
+                # But on_open_file is UI driven. 
+                # Ideally ZenpadWindow has an open_file(path) method.
+                # Let's check window.py again, add_tab exists.
+                self.window.open_file_from_path(filename)
+                
+        return 0
 
 def main():
     app = ZenpadApplication()

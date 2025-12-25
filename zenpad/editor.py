@@ -57,6 +57,10 @@ class EditorTab(Gtk.ScrolledWindow):
             self.font_desc.set_size(new_size)
             self.view.modify_font(self.font_desc)
 
+    def zoom_reset(self):
+        self.font_desc.set_size(12 * Pango.SCALE)
+        self.view.modify_font(self.font_desc)
+
     def get_text(self):
         start_iter = self.buffer.get_start_iter()
         end_iter = self.buffer.get_end_iter()

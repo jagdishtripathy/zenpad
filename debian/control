@@ -10,5 +10,5 @@ Package: zenpad
 Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends}, python3-gi, gir1.2-gtk-3.0, gir1.2-gtksource-4
 Description: Lightweight text editor based on GTK+
- Zenpad is a simple text editor aiming to clone and improve upon Mousepad.
+ Zenpad is a modern, lightweight text editor designed for efficiency and aesthetics.
  It features syntax highlighting, tabs, and more.
