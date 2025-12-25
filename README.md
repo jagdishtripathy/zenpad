@@ -1,59 +1,98 @@
-# 🧘 Zenpad
+# Zenpad
 
-> **A modern, lightweight text editor built for the flow state.**
+![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-green.svg)
+![Platform Linux](https://img.shields.io/badge/platform-linux-lightgrey.svg)
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![License](https://img.shields.io/badge/license-GPL--2.0-green.svg)
+**Zenpad** is a lightweight, high-performance text editor for the Linux desktop, built with Python and GTK+. detailed to provide a distraction-free coding environment, it combines the speed of a simple notepad with the essential features required by developers and power users.
 
----
+## Table of Contents
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Development](#development)
+- [License](#license)
 
-**Zenpad** is designed to be fast, minimal, and efficient. It gets out of your way so you can focus on what matters: your code.  
-Whether you're tweaking a config file or writing your next masterpiece, Zenpad provides a clean, distraction-free environment with all the modern essentials.
+## Features
 
-## ✨ Features
+Zenpad leverages `GtkSourceView 4` to provide robust text editing capabilities while maintaining a minimal footprint.
 
-*   **⚡ Lightning Fast**: Starts instantly, designed for speed.
-*   **🎨 Syntax Highlighting**: Powered by `GtkSourceView 4`, supporting hundreds of languages.
-*   **📂 Tabbed Interface**: Effortlessly switch between multiple files.
-*   **🧠 Smart Helpers**:
-    *   Auto-indentation & Bracket matching.
-    *   **"No Distractions" Mode**: Disabled line highlighting by default for a clearer view.
-*   **🔍 Power Search**: Incremental search with real-time match counting.
-*   **💾 Session Restore**: Pick up exactly where you left off.
-*   **🐧 Native Integration**: Follows Linux system themes (Dark/Light) automatically.
+*   **Syntax Highlighting:** Support for over 100 programming languages.
+*   **Multi-Tab Interface:** Efficiently manage multiple files in a single window.
+*   **Smart Editing:**
+    *   Automatic indentation and bracket matching.
+    *   Configurable word wrap and line numbering.
+    *   Toggleable "Highlight Current Line" for focused editing.
+*   **Search and Replace:** Incremental search with real-time occurrence counting.
+*   **Session Persistence:** Automatically restores open tabs and window state across sessions.
+*   **System Integration:** Seamlessly integrates with Linux desktop themes and workflows.
 
-##  Installation
+## Requirements
 
-### 📦 Debian / Ubuntu (Recommended)
+Zenpad requires a standard GNOME/GTK environment.
 
-Get the latest `.deb` release and install it via terminal:
+*   Python 3.6+
+*   GTK+ 3.22+
+*   GtkSourceView 4
+*   PyGObject (python3-gi)
+
+## Installation
+
+### Debian / Ubuntu
+
+The recommended way to install Zenpad is via the pre-built Debian package.
+
+1.  **Download** the latest release (`.deb`).
+2.  **Install** via command line:
+
+    ```bash
+    sudo dpkg -i zenpad_1.0.0_all.deb
+    sudo apt-get install -f
+    ```
+
+### Source Installation
+
+To run Zenpad directly from the source code:
 
 ```bash
-sudo dpkg -i zenpad_1.0.0_all.deb
-sudo apt-get install -f  # Fixes dependencies automatically
+# Implement standard setuptools installation or run directly
+python3 setup.py install --user
 ```
 
-### 🔓 Native Build
+## Usage
 
-Want to hack on it? Build it clearly from source:
+Zenpad can be launched from the application menu or via the terminal.
+
+**Command Line Arguments:**
+```bash
+zenpad [filename]...
+```
+
+**Examples:**
+```bash
+zenpad                   # Launch with empty buffer
+zenpad README.md         # Open specific file
+zenpad file1.py file2.js # Open multiple files
+```
+
+## Development
+
+To build the Debian package from source, ensure you have the necessary build tools installed:
 
 ```bash
-# 1. Grab dependencies
 sudo apt install build-essential fakeroot debhelper dh-python python3-all python3-gi gir1.2-gtksource-4
+```
 
-# 2. Build the package
+Build the package:
+```bash
 dpkg-buildpackage -us -uc
 ```
 
-## 🎮 Usage
+## License
 
-Launch from your app menu or command line:
-
-```bash
-zenpad                 # Start empty
-zenpad my_script.py    # Open a file
-```
+Zenpad is open-source software licensed under the **GPL-2.0**.
+See the [LICENSE](LICENSE) file for more details.
 
 ---
-
-*Made by **Team Zenpad**.*
+Copyright © 2025 **Team Zenpad**.
