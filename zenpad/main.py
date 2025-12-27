@@ -28,6 +28,8 @@ class ZenpadApplication(Gtk.Application):
         parser.add_argument("files", nargs="*", help="Files to open")
         parser.add_argument("-v", "--version", action="store_true", help="Print version information and exit")
         parser.add_argument("-q", "--quit", action="store_true", help="Quit the running instance")
+        parser.add_argument("-l", "--line", type=int, help="Jump to specific line number")
+        parser.add_argument("-c", "--column", type=int, help="Jump to specific column number")
         
         # Parse arguments (skip program name)
         try:
@@ -50,8 +52,7 @@ class ZenpadApplication(Gtk.Application):
         # Open Files
         if parsed_args.files:
             for filename in parsed_args.files:
-                # Basic open for now in this commit
-                self.window.open_file_from_path(filename)
+                self.window.open_file_from_path(filename, line=parsed_args.line, column=parsed_args.column)
 
         return 0
 

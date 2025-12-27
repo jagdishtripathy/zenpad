@@ -1551,6 +1551,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         # Switch to the new tab
         self.notebook.set_current_page(-1)
         self.update_tab_label(editor)
+        return editor
 
     def update_tab_label(self, editor):
         page_num = self.notebook.page_num(editor)
@@ -1670,7 +1671,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         dialog.destroy()
 
-    def open_file_from_path(self, file_path):
+    def open_file_from_path(self, file_path, line=None, column=None):
         if not os.path.exists(file_path):
              # Create new tab with this filename/path, ready to save
              self.add_tab("", os.path.basename(file_path), os.path.abspath(file_path))
@@ -1690,7 +1691,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             # Try UTF-8 first
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            self.add_tab(content, os.path.basename(file_path), file_path)
+            editor = self.add_tab(content, os.path.basename(file_path), file_path)
+            
+            if line is not None:
+                self.goto_line(editor, line, column)
             
             # Add to Recent
             manager = Gtk.RecentManager.get_default()
@@ -1710,7 +1714,15 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                 dlg.run()
                 dlg.destroy()
                 
-                self.add_tab(content, os.path.basename(file_path), file_path)
+                # If we failed to get content in fallback, maybe add empty?
+                # But here we are just adding what we got?
+                # Actually earlier code flow:
+                # self.add_tab(content, ...)
+                # So we should be consistent.
+                # Just capture it.
+                editor = self.add_tab(content, os.path.basename(file_path), file_path)
+                if line is not None:
+                    self.goto_line(editor, line, column)
             except Exception as e:
                 self.show_error(f"Error opening binary/incompatible file: {e}")
                 
@@ -2182,3 +2194,16 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                         subprocess.call([opener, folder])
                 except Exception as e:
                      print(f"Error opening folder: {e}")
+
+    def goto_line(self, editor, line, column=0):
+        try:
+            buff = editor.buffer
+            if line < 1: line = 1
+            iter_ = buff.get_iter_at_line(line - 1)
+            if column:
+                iter_.forward_chars(int(column))
+            buff.place_cursor(iter_)
+            editor.view.scroll_to_iter(iter_, 0.0, True, 0.5, 0.5)
+            editor.view.grab_focus()
+        except Exception as e:
+            print(f"Error going to line: {e}")
