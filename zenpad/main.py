@@ -30,6 +30,7 @@ class ZenpadApplication(Gtk.Application):
         parser.add_argument("-q", "--quit", action="store_true", help="Quit the running instance")
         parser.add_argument("-l", "--line", type=int, help="Jump to specific line number")
         parser.add_argument("-c", "--column", type=int, help="Jump to specific column number")
+        parser.add_argument("--preferences", action="store_true", help="Open preferences dialog")
         
         # Parse arguments (skip program name)
         try:
@@ -48,6 +49,11 @@ class ZenpadApplication(Gtk.Application):
 
         self.activate()
         
+        # Handle Preferences
+        if parsed_args.preferences:
+             # Need to ensure window is created/present
+             if self.window:
+                 self.window.on_preferences_clicked(None)
 
         # Open Files
         if parsed_args.files:
