@@ -10,8 +10,12 @@ from .window import ZenpadWindow
 
 class ZenpadApplication(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id="com.zenpad.editor",
-                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
+        flags = Gio.ApplicationFlags.HANDLES_COMMAND_LINE
+
+        if "--disable-server" in sys.argv:
+            flags |= Gio.ApplicationFlags.NON_UNIQUE
+
+        super().__init__(application_id="com.zenpad.editor", flags=flags)
         self.window = None
         Gtk.Window.set_default_icon_name("accessories-text-editor")
 
@@ -31,6 +35,7 @@ class ZenpadApplication(Gtk.Application):
         parser.add_argument("-l", "--line", type=int, help="Jump to specific line number")
         parser.add_argument("-c", "--column", type=int, help="Jump to specific column number")
         parser.add_argument("--preferences", action="store_true", help="Open preferences dialog")
+        parser.add_argument("--disable-server", action="store_true", help="Launch Zenpad as an isolated instance")
         
         # Parse arguments (skip program name)
         try:
