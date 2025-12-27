@@ -10,12 +10,8 @@ from .window import ZenpadWindow
 
 class ZenpadApplication(Gtk.Application):
     def __init__(self):
-        flags = Gio.ApplicationFlags.HANDLES_COMMAND_LINE
-
-        if "--disable-server" in sys.argv:
-            flags |= Gio.ApplicationFlags.NON_UNIQUE
-
-        super().__init__(application_id="com.zenpad.editor", flags=flags)
+        super().__init__(application_id="com.zenpad.editor",
+                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self.window = None
         Gtk.Window.set_default_icon_name("accessories-text-editor")
 
@@ -76,6 +72,14 @@ class ZenpadApplication(Gtk.Application):
 
 def main():
     app = ZenpadApplication()
+
+    # Parse disable-server here to avoid issues later
+    if "--disable-server" in sys.argv:
+        flags = app.get_flags()
+        flags |= Gio.ApplicationFlags.NON_UNIQUE
+
+        app.set_flags(flags)
+
     try:
         return app.run(sys.argv)
     except KeyboardInterrupt:
