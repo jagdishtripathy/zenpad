@@ -37,10 +37,10 @@ class ZenpadApplication(Gtk.Application):
 
 def main():
     app = ZenpadApplication()
-    return app.run(sys.argv)
+    try:
+        return app.run(sys.argv)
+    except KeyboardInterrupt:
+        return 0
 
 if __name__ == "__main__":
-    try:
-        sys.exit(main())
-    except KeyboardInterrupt:
-        pass
+    sys.exit(main())
