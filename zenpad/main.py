@@ -5,7 +5,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
 
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, GtkSource
 from .window import ZenpadWindow
 
 class ZenpadApplication(Gtk.Application):
@@ -36,6 +36,7 @@ class ZenpadApplication(Gtk.Application):
         parser.add_argument("-c", "--column", type=int, help="Jump to specific column number")
         parser.add_argument("--preferences", action="store_true", help="Open preferences dialog")
         parser.add_argument("--disable-server", action="store_true", help="Launch Zenpad as an isolated instance")
+        parser.add_argument("--list-encodings", action="store_true", help="Display list of possible encodings to use and exit")
         
         # Parse arguments (skip program name)
         try:
@@ -48,6 +49,12 @@ class ZenpadApplication(Gtk.Application):
             print("Zenpad v1.0.0")
             return 0
             
+        if parsed_args.list_encodings:
+            encodings = GtkSource.Encoding.get_all()
+            for enc in encodings:
+                print(f"{enc.get_charset()} {enc.get_name()}")
+            return 0
+
         if parsed_args.quit:
             self.quit()
             return 0
