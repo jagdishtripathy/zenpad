@@ -20,8 +20,14 @@ class ZenpadApplication(Gtk.Application):
         self.window.present()
 
     def do_command_line(self, command_line):
-        self.activate()
         args = command_line.get_arguments()
+        
+        # Check for version flag
+        if len(args) > 1 and args[1] in ["--version", "-v"]:
+            print("Zenpad v1.0.0")
+            return 0
+
+        self.activate()
         
         # Args[0] is usually the program name, files follow
         if len(args) > 1:
