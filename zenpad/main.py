@@ -34,7 +34,7 @@ class ZenpadApplication(Gtk.Application):
 
         self.activate()
         
-        # Args[0] is usually the program name, files follow
+        # Args[0] is usually the program name, files follow~
         if len(args) > 1:
             for filename in args[1:]:
                 # We need to tell the window to open this file
