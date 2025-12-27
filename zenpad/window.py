@@ -1468,16 +1468,15 @@ class ZenpadWindow(Gtk.ApplicationWindow):
     def on_new_tab(self, widget, param=None):
         self.add_tab()
         
-    def on_close_current_tab(self, widget, param=None):
+    def on_close_current_tab(self, widget=None, param=None):
         page_num = self.notebook.get_current_page()
         if page_num != -1:
-            self.close_tab(page_num)
+            editor = self.notebook.get_nth_page(page_num)
+            if self.check_unsaved_changes(editor):
+                self.close_tab(page_num)
 
     def close_tab(self, page_num):
         self.notebook.remove_page(page_num)
-        # If no tabs left, close window? Or add empty?
-        if self.notebook.get_n_pages() == 0:
-            self.close()
 
     def add_tab(self, content=None, title="Untitled", path=None):
         editor = EditorTab(self.search_settings)
@@ -1503,6 +1502,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         # EventBox for Right Click
         event_box = Gtk.EventBox()
+        event_box.set_visible_window(False) # Let clicks pass through to button if not handled
         event_box.add(hbox)
         event_box.connect("button-press-event", self.on_tab_button_press, editor)
         event_box.show_all()
@@ -1544,6 +1544,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         # Reset modified flag (ensure opening file/new tab is clean)
         editor.buffer.set_modified(False)
 
+        # Switch to the new tab
+        # Reset modified flag (ensure opening file/new tab is clean)
+        editor.buffer.set_modified(False)
+        
         # Switch to the new tab
         self.notebook.set_current_page(-1)
         self.update_tab_label(editor)
@@ -1638,9 +1642,17 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
     def on_close_clicked(self, editor):
         page_num = self.notebook.page_num(editor)
-        if page_num != -1:
-            if self.check_unsaved_changes(editor):
-                self.close_tab(page_num)
+        if page_num == -1: return
+
+        # Check for unsaved changes first
+        if not self.check_unsaved_changes(editor):
+            return
+
+        # If it's the last tab, close the window
+        if self.notebook.get_n_pages() == 1:
+            self.close()
+        else:
+            self.close_tab(page_num)
 
     def on_open_file(self, widget, param=None):
         dialog = Gtk.FileChooserDialog(
