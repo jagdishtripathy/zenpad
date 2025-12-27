@@ -31,6 +31,7 @@ class ZenpadApplication(Gtk.Application):
         parser.add_argument("-l", "--line", type=int, help="Jump to specific line number")
         parser.add_argument("-c", "--column", type=int, help="Jump to specific column number")
         parser.add_argument("--preferences", action="store_true", help="Open preferences dialog")
+        parser.add_argument("--disable-server", action="store_true", help="Launch Zenpad as an isolated instance")
         parser.add_argument("--list-encodings", action="store_true", help="Display list of possible encodings to use and exit")
         
         # Parse arguments (skip program name)
@@ -71,6 +72,14 @@ class ZenpadApplication(Gtk.Application):
 
 def main():
     app = ZenpadApplication()
+
+    # Parse disable-server here to avoid issues later
+    if "--disable-server" in sys.argv:
+        flags = app.get_flags()
+        flags |= Gio.ApplicationFlags.NON_UNIQUE
+
+        app.set_flags(flags)
+
     try:
         return app.run(sys.argv)
     except KeyboardInterrupt:
