@@ -1,4 +1,5 @@
 from gi.repository import Gtk, Pango, Gdk, Gio, GLib
+import hashlib
 import os
 import json
 from .editor import EditorTab
@@ -1512,6 +1513,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         # Connect signals
         editor.buffer.connect("modified-changed", lambda w: self.update_tab_label(editor))
+        editor.buffer.connect("changed", lambda w: self.update_title(editor))
         editor.buffer.connect("mark-set", lambda w, loc, mark: self.update_match_count(editor))
         # Search signals
         if editor.search_context:
@@ -1543,6 +1545,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
         # Reset modified flag (ensure opening file/new tab is clean)
         editor.buffer.set_modified(False)
+
+        # Initialize last_buffer for new tabs
+        content = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter(), True)
+        editor.last_buffer = hashlib.md5(content.encode("UTF-8")).hexdigest()
 
         # Switch to the new tab
         # Reset modified flag (ensure opening file/new tab is clean)
@@ -1698,7 +1704,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                     content = f.read()
 
             editor = self.add_tab(content, os.path.basename(file_path), file_path)
-            
+            last_text = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter(), True)
+
+            editor.last_buffer = hashlib.md5(last_text.encode(encoding if encoding else "UTF-8")).hexdigest()
             if line is not None:
                 self.goto_line(editor, line, column)
             
@@ -1748,6 +1756,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             return
         
         editor = self.notebook.get_nth_page(page_num)
+        last_text = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter(), True)
+
+        editor.last_buffer = hashlib.md5(last_text.encode("UTF-8")).hexdigest()
         if editor.file_path:
             self.save_to_path(editor, editor.file_path)
         else:
@@ -1790,6 +1801,12 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
     def check_unsaved_changes(self, editor):
         if editor.buffer.get_modified():
+            content = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter(), True)
+
+            # Changed but content is same, return true
+            if hashlib.md5(content.encode("UTF-8")).hexdigest() == editor.last_buffer:
+                return True
+
             filename = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
             dialog = Gtk.MessageDialog(
                 transient_for=self,
@@ -1856,7 +1873,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
     def update_title(self, editor):
         filename = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
-        if editor.buffer.get_modified():
+        content = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter(), True)
+        saved = hashlib.md5(content.encode("UTF-8")).hexdigest() == editor.last_buffer
+
+        if editor.buffer.get_modified() and not saved:
             self.set_title(f"*{filename} - Zenpad")
         else:
             self.set_title(f"{filename} - Zenpad")
