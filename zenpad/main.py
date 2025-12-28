@@ -34,6 +34,7 @@ class ZenpadApplication(Gtk.Application):
         parser.add_argument("--disable-server", action="store_true", help="Launch Zenpad as an isolated instance")
         parser.add_argument("--list-encodings", action="store_true", help="Display list of possible encodings to use and exit")
         parser.add_argument("-e", "--encoding", help="Set the character encoding to use for opening files")
+        parser.add_argument("-o", "--opening-mode", default="tab", choices=["tab", "window", "mixed"], help="Set the file opening mode")
         
         # Parse arguments (skip program name)
         try:
@@ -74,11 +75,16 @@ class ZenpadApplication(Gtk.Application):
 def main():
     app = ZenpadApplication()
 
-    # Parse disable-server here to avoid issues later
-    if "--disable-server" in sys.argv:
+    # Parse startup flags to determine if we need a new instance
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--disable-server", action="store_true")
+    parser.add_argument("-o", "--opening-mode")
+    
+    args, _ = parser.parse_known_args(sys.argv[1:])
+
+    if args.disable_server or args.opening_mode == "window":
         flags = app.get_flags()
         flags |= Gio.ApplicationFlags.NON_UNIQUE
-
         app.set_flags(flags)
 
     try:
