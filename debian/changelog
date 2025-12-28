@@ -12,6 +12,7 @@ zenpad (1.1.0) unstable; urgency=medium
   * Add --disable-server flag (#14)
   * Update README source installation instructions (#17)
   * Fix unsaved warning indicator (via PR #18 logic)
+  * Fix GtkSource version crash (fallback to 3.0)
 
  -- Zenpad Team <maintainer@example.com>  Dat, 28 Dec 2025 12:00:00 +0000
 
