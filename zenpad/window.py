@@ -1980,8 +1980,8 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         about.set_modal(True)
         
         about.set_program_name("Zenpad")
-        about.set_version("1.0.0")
-        about.set_copyright("Copyright \u00A9 2025 - Zenpad Developers")
+        about.set_version("1.1.0")
+        about.set_copyright("Copyright © 2025 - Zenpad Developers")
         about.set_comments("Zenpad is a modern, lightweight, and efficient text editor for Linux.\nDesigned for speed and simplicity.\n\n")
         about.set_website("https://github.com/jagdishtripathy/zenpad")
         about.set_website_label("Website")

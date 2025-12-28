@@ -1,3 +1,20 @@
+zenpad (1.1.0) unstable; urgency=medium
+
+  * Release 1.1.0: Huge CLI Update
+  * Fix KeyboardInterrupt traceback (#4)
+  * Add --version, --quit flags (#5, #6)
+  * Add --help flag (#7)
+  * Add --preferences flag (#8)
+  * Add --line / --column jump support (#9, #10)
+  * Add --opening-mode (tab/window/mixed) (#11)
+  * Add --encoding flag (#12)
+  * Add --list-encodings flag (#13)
+  * Add --disable-server flag (#14)
+  * Update README source installation instructions (#17)
+  * Fix unsaved warning indicator (via PR #18 logic)
+
+ -- Zenpad Team <maintainer@example.com>  Dat, 28 Dec 2025 12:00:00 +0000
+
 zenpad (1.0.0) stable; urgency=medium
 
   * Initial release.
