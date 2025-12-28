@@ -1,4 +1,5 @@
 from gi.repository import Gtk, Pango, Gdk, Gio, GLib
+import hashlib
 import os
 import json
 from .editor import EditorTab
@@ -92,8 +93,6 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         self.load_session()
         
         self.show_all()
-
-        self.last_buffer = None
 
     def create_menubar(self):
         menubar = Gtk.MenuBar()
@@ -1700,8 +1699,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                     content = f.read()
 
             editor = self.add_tab(content, os.path.basename(file_path), file_path)
-            self.last_buffer = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter())
-            
+            last_text = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter())
+
+            editor.last_buffer = hashlib.md5(last_text.encode(encoding if encoding else "UTF-8")).hexdigest()
             if line is not None:
                 self.goto_line(editor, line, column)
             
@@ -1751,7 +1751,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             return
         
         editor = self.notebook.get_nth_page(page_num)
-        self.last_buffer = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter())
+        last_text = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter())
+
+        editor.last_buffer = hashlib.md5(last_text.encode("UTF-8")).hexdigest()
         if editor.file_path:
             self.save_to_path(editor, editor.file_path)
         else:
@@ -1797,7 +1799,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             content = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter())
 
             # Changed but content is same, return true
-            if content == self.last_buffer:
+            if hashlib.md5(content.encode("UTF-8")).hexdigest() == editor.last_buffer:
                 return True
 
             filename = os.path.basename(editor.file_path) if editor.file_path else "Untitled"

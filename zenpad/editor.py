@@ -1,4 +1,5 @@
 import gi
+import hashlib
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
 from gi.repository import Gtk, GtkSource, Pango
@@ -9,6 +10,7 @@ class EditorTab(Gtk.ScrolledWindow):
         self.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         
         self.buffer = GtkSource.Buffer()
+        self.last_buffer = None
         self.view = GtkSource.View.new_with_buffer(self.buffer)
         
         self.file_path = None
