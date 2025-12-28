@@ -1671,7 +1671,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         dialog.destroy()
 
-    def open_file_from_path(self, file_path, line=None, column=None):
+    def open_file_from_path(self, file_path, line=None, column=None, encoding=None):
         if not os.path.exists(file_path):
              # Create new tab with this filename/path, ready to save
              self.add_tab("", os.path.basename(file_path), os.path.abspath(file_path))
@@ -1688,9 +1688,15 @@ class ZenpadWindow(Gtk.ApplicationWindow):
              return
 
         try:
-            # Try UTF-8 first
-            with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read()
+            # If encoding specified, try it strictly?
+            if encoding:
+                 with open(file_path, "r", encoding=encoding) as f:
+                     content = f.read()
+            else:
+                # Try UTF-8 first
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+
             editor = self.add_tab(content, os.path.basename(file_path), file_path)
             
             if line is not None:

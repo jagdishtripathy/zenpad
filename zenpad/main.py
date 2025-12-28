@@ -33,6 +33,7 @@ class ZenpadApplication(Gtk.Application):
         parser.add_argument("--preferences", action="store_true", help="Open preferences dialog")
         parser.add_argument("--disable-server", action="store_true", help="Launch Zenpad as an isolated instance")
         parser.add_argument("--list-encodings", action="store_true", help="Display list of possible encodings to use and exit")
+        parser.add_argument("-e", "--encoding", help="Set the character encoding to use for opening files")
         
         # Parse arguments (skip program name)
         try:
@@ -66,7 +67,7 @@ class ZenpadApplication(Gtk.Application):
         # Open Files
         if parsed_args.files:
             for filename in parsed_args.files:
-                self.window.open_file_from_path(filename, line=parsed_args.line, column=parsed_args.column)
+                self.window.open_file_from_path(filename, line=parsed_args.line, column=parsed_args.column, encoding=parsed_args.encoding)
 
         return 0
 
