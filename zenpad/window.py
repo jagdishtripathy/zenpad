@@ -1546,6 +1546,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         # Reset modified flag (ensure opening file/new tab is clean)
         editor.buffer.set_modified(False)
 
+        # Initialize last_buffer for new tabs
+        content = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter(), True)
+        editor.last_buffer = hashlib.md5(content.encode("UTF-8")).hexdigest()
+
         # Switch to the new tab
         # Reset modified flag (ensure opening file/new tab is clean)
         editor.buffer.set_modified(False)
