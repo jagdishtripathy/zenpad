@@ -1513,6 +1513,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         # Connect signals
         editor.buffer.connect("modified-changed", lambda w: self.update_tab_label(editor))
+        editor.buffer.connect("changed", lambda w: self.update_tab_label(editor))
         editor.buffer.connect("changed", lambda w: self.update_title(editor))
         editor.buffer.connect("mark-set", lambda w, loc, mark: self.update_match_count(editor))
         # Search signals
@@ -1575,7 +1576,14 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         if children:
              label = children[0]
              name = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
-             # Removed * from tab label
+             
+             # Check for unsaved changes
+             content = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter(), True)
+             saved = hashlib.md5(content.encode("UTF-8")).hexdigest() == editor.last_buffer
+             
+             if editor.buffer.get_modified() and not saved:
+                 name += " ●"
+                 
              label.set_text(name)
              if editor.file_path:
                  # Update tooltip
