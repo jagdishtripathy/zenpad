@@ -650,11 +650,13 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         undo_btn = Gtk.ToolButton()
         undo_btn.set_icon_name("edit-undo")
         undo_btn.set_tooltip_text("Undo")
+        undo_btn.connect("clicked", self.on_undo)
         toolbar.insert(undo_btn, -1)
         
         redo_btn = Gtk.ToolButton()
         redo_btn.set_icon_name("edit-redo")
         redo_btn.set_tooltip_text("Redo")
+        redo_btn.connect("clicked", self.on_redo)
         toolbar.insert(redo_btn, -1)
         
         toolbar.insert(Gtk.SeparatorToolItem(), -1)
@@ -1444,6 +1446,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         dlg.run()
         dlg.destroy()
 
+
     def on_detach_tab(self, widget, param=None):
         page_num = self.notebook.get_current_page()
         if page_num == -1: return
@@ -1470,6 +1473,11 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         self.add_tab()
         
     def on_close_current_tab(self, widget=None, param=None):
+        n_pages = self.notebook.get_n_pages()
+        if n_pages == 1:
+            self.close()
+            return
+        
         page_num = self.notebook.get_current_page()
         if page_num != -1:
             editor = self.notebook.get_nth_page(page_num)
@@ -1846,6 +1854,11 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         return True
 
     def on_close_current_tab(self, widget=None, param=None):
+        n_pages = self.notebook.get_n_pages()
+        if n_pages == 1:
+            self.close()
+            return
+        
         page_num = self.notebook.get_current_page()
         if page_num != -1:
             editor = self.notebook.get_nth_page(page_num)
