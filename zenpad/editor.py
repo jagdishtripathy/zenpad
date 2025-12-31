@@ -5,7 +5,7 @@ try:
     gi.require_version('GtkSource', '4')
 except ValueError:
     gi.require_version('GtkSource', '3.0')
-from gi.repository import Gtk, GtkSource, Pango
+from gi.repository import Gtk, GtkSource, Pango, Gdk
 
 class EditorTab(Gtk.ScrolledWindow):
     def __init__(self, search_settings=None):
@@ -39,6 +39,9 @@ class EditorTab(Gtk.ScrolledWindow):
         self.font_desc = Pango.FontDescription("Monospace 12")
         self.view.modify_font(self.font_desc)
         
+        # Handle scrolling (for zoom-in-out)
+        self.view.connect('scroll-event', self.on_scroll)
+
         self.add(self.view)
         self.show_all()
 
@@ -92,3 +95,16 @@ class EditorTab(Gtk.ScrolledWindow):
         language = manager.guess_language(filename, None)
         if language:
             self.buffer.set_language(language)
+
+    def on_scroll(self, gpointer, event):
+        if (not event.state == Gdk.ModifierType.CONTROL_MASK):
+            return False
+
+        good, dx, dy = event.get_scroll_deltas()
+
+        if (dy < 0.0):
+            self.zoom_in()
+        elif (dy > 0.0):
+            self.zoom_out()
+
+        return True
