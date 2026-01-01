@@ -3,6 +3,7 @@ import hashlib
 import os
 import json
 from .editor import EditorTab
+from zenpad import analysis  # New Analysis Module
 from zenpad.preferences import PreferencesDialog, Settings
 from gi.repository import GtkSource
 
@@ -603,8 +604,36 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         menubar.append(doc_item)
         
-        # Help Menu
+        # Tools Menu
+        tools_menu = Gtk.Menu()
+        tools_item = Gtk.MenuItem(label="Tools")
+        tools_item.set_submenu(tools_menu)
+        
+        # Formatters
+        fmt_json = Gtk.MenuItem(label="Format JSON")
+        fmt_json.set_action_name("win.format_json")
+        tools_menu.append(fmt_json)
+        
+        fmt_xml = Gtk.MenuItem(label="Format XML")
+        fmt_xml.set_action_name("win.format_xml")
+        tools_menu.append(fmt_xml)
+
+        convert_item = Gtk.MenuItem(label="Convert Log to JSON")
+        convert_item.set_action_name("win.convert_json")
+        tools_menu.append(convert_item)
+        
+        tools_menu.append(Gtk.SeparatorMenuItem())
+        
+        # Hex View
+        hex_item = Gtk.MenuItem(label="Hex View")
+        hex_item.set_action_name("win.hex_view")
+        tools_menu.append(hex_item)
+        
+        menubar.append(tools_item)
+        
+        # Help Menu (moved to end)
         help_menu = Gtk.Menu()
+
         help_item = Gtk.MenuItem(label="Help")
         help_item.set_submenu(help_menu)
         
@@ -1326,7 +1355,12 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             ("delete_line", self.on_delete_line),
             ("move_up", lambda *args: self.on_move_line("up")),
             ("move_down", lambda *args: self.on_move_line("down")),
-            ("preferences", lambda *args: self.on_preferences_clicked(None))
+            ("preferences", lambda *args: self.on_preferences_clicked(None)),
+            # Analysis Actions
+            ("format_json", self.on_format_json),
+            ("format_xml", self.on_format_xml),
+            ("convert_json", self.on_convert_json),
+            ("hex_view", self.on_hex_view)
         ])
 
         for name, callback in actions:
@@ -1385,6 +1419,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         app.set_accels_for_action("win.move_up", ["<Primary>Up"])
         app.set_accels_for_action("win.move_down", ["<Primary>Down"])
         app.set_accels_for_action("win.preferences", ["<Primary>comma"])
+        app.set_accels_for_action("win.format_json", ["<Primary><Shift>j"])
+        app.set_accels_for_action("win.format_xml", ["<Primary><Shift>x"])
+        app.set_accels_for_action("win.convert_json", ["<Primary><Alt>l"])
+        app.set_accels_for_action("win.hex_view", ["<Primary><Shift>h"])
 
     def on_new_window(self, widget, param=None):
         app = self.get_application()
@@ -2117,6 +2155,80 @@ class ZenpadWindow(Gtk.ApplicationWindow):
     def on_trim_whitespace(self, widget):
          self._modify_all_lines(lambda line: line.rstrip())
 
+    # --- Analysis / Tools Handlers ---
+    def on_format_json(self, action, parameter):
+        self._run_formatter(analysis.format_json, "JSON")
+
+    def on_format_xml(self, action, parameter):
+        self._run_formatter(analysis.format_xml, "XML")
+
+    def on_convert_json(self, action, parameter):
+        """Standard converter that makes a NEW TAB with the JSON"""
+        # We don't replace in-place because conversion is destructive/transformative
+        # and we want to keep the original log file intact.
+        page_num = self.notebook.get_current_page()
+        if page_num == -1: return
+        editor = self.notebook.get_nth_page(page_num)
+        text = editor.get_text()
+
+        success, result, error = analysis.convert_to_json(text)
+        
+        if success:
+             # Open in new tab
+             src_name = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
+             self.add_tab(result, f"JSON: {src_name}")
+        else:
+             self.show_error(f"Failed to convert: {error}")
+
+    def _run_formatter(self, func, name):
+        """Helper to run a formatter on selection or whole file"""
+        page_num = self.notebook.get_current_page()
+        if page_num == -1: return
+        editor = self.notebook.get_nth_page(page_num)
+        buff = editor.buffer
+        
+        # Check selection
+        has_sel = buff.get_has_selection()
+        if has_sel:
+            start, end = buff.get_selection_bounds()
+            text = buff.get_text(start, end, True)
+        else:
+            start, end = buff.get_start_iter(), buff.get_end_iter()
+            text = buff.get_text(start, end, True)
+            
+        success, result, error = func(text)
+        
+        if success:
+            buff.begin_user_action()
+            buff.delete(start, end)
+            buff.insert(start, result)
+            buff.end_user_action()
+        else:
+            self.show_error(f"Failed to format {name}: {error}")
+
+    def on_hex_view(self, action, parameter):
+        page_num = self.notebook.get_current_page()
+        if page_num == -1: return
+        editor = self.notebook.get_nth_page(page_num)
+        
+        # Get content (might be binary-ish text)
+        text = editor.get_text()
+        
+        # Generate Dump
+        hex_dump = analysis.generate_hex_dump(text)
+        
+        # Create Title
+        src_name = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
+        title = f"Hex: {src_name}"
+        
+        # Open in New Tab
+        new_editor = self.add_tab(hex_dump, title)
+        
+        # Set Read-Only and Monospace
+        new_editor.view.set_editable(False)
+        # Maybe set a simpler highlighting or none
+        new_editor.buffer.set_language(None)
+    
     def on_toggle_comment(self, widget):
         page_num = self.notebook.get_current_page()
         if page_num != -1:
