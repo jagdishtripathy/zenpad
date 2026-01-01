@@ -1401,12 +1401,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                 # decode %20 etc if needed, but keeping simple
                 import urllib.parse
                 path = urllib.parse.unquote(path)
-                try:
-                    with open(path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                    self.add_tab(content, os.path.basename(path), path)
-                except Exception as e:
-                    print(f"Error opening recent: {e}")
+                # Use the centralized open method to handle errors/warnings consistently
+                # Don't create new tabs for missing recent files
+                self.open_file_from_path(path, create_if_missing=False)
 
     def on_save_as(self, widget, param=None):
         page_num = self.notebook.get_current_page()
@@ -1693,16 +1690,27 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         dialog.destroy()
 
-    def open_file_from_path(self, file_path, line=None, column=None, encoding=None):
+    def open_file_from_path(self, file_path, line=None, column=None, encoding=None, create_if_missing=True):
         if not os.path.exists(file_path):
+             # Warn user first
+             dialog = Gtk.MessageDialog(
+                 transient_for=self,
+                 flags=0,
+                 message_type=Gtk.MessageType.WARNING,
+                 buttons=Gtk.ButtonsType.OK,
+                 text="File Not Found",
+             )
+             dialog.format_secondary_text(
+                 f"The file '{os.path.basename(file_path)}' was not found."
+             )
+             dialog.run()
+             dialog.destroy()
+
+             if not create_if_missing:
+                 return
+
              # Create new tab with this filename/path, ready to save
              self.add_tab("", os.path.basename(file_path), os.path.abspath(file_path))
-             # Mark as modified/unsaved initially? Or just ready?
-             # Usually "new file" implies not saved to disk yet, BUT path is set.
-             # If we set path, save() will overwrite.
-             # The user expects "zenpad foo.txt" -> edits -> save -> writes to foo.txt.
-             # So this is correct.
-             # However, since file doesn't exist, we might want to mark it modified so they don't think it's saved.
              # But add_tab (with my recent fix) sets modified=False.
              # Let's set modified=True explicitly if we created it from scratch?
              # No, if I open "foo.txt" and it's empty, and I don't type anything, and close, it shouldn't prompt.
