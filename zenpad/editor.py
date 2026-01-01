@@ -6,6 +6,7 @@ try:
 except ValueError:
     gi.require_version('GtkSource', '3.0')
 from gi.repository import Gtk, GtkSource, Pango
+from zenpad import analysis
 
 class EditorTab(Gtk.ScrolledWindow):
     def __init__(self, search_settings=None):
@@ -17,6 +18,9 @@ class EditorTab(Gtk.ScrolledWindow):
         self.view = GtkSource.View.new_with_buffer(self.buffer)
         
         self.file_path = None
+        
+        # Connect to changed signal for auto-detection
+        self.buffer.connect("changed", self.on_buffer_changed)
         
         # Search Context
         self.search_context = None
@@ -41,6 +45,31 @@ class EditorTab(Gtk.ScrolledWindow):
         
         self.add(self.view)
         self.show_all()
+
+    def on_buffer_changed(self, buffer):
+        """Triggers reliable auto-detection on content change"""
+        # We only auto-detect if we don't have a rigid file path override
+        # Or should we always? User said "Decouple from save state".
+        # Let's run it.
+        self.auto_detect_language()
+
+    def auto_detect_language(self):
+        # Limit to detecting from the first 1000 chars for speed
+        start = self.buffer.get_start_iter()
+        end = self.buffer.get_start_iter()
+        end.forward_chars(1000)
+        text = self.buffer.get_text(start, end, True)
+        
+        detected_id = analysis.detect_language_by_content(text)
+        
+        if detected_id:
+            manager = GtkSource.LanguageManager.get_default()
+            language = manager.get_language(detected_id)
+            current_lang = self.buffer.get_language()
+            
+            # Only switch if different, to avoid thrashing
+            if language and current_lang != language:
+                self.buffer.set_language(language)
 
     def zoom_in(self):
         size = self.font_desc.get_size()

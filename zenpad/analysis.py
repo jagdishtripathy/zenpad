@@ -96,6 +96,69 @@ def convert_to_json(text):
     return True, json.dumps(fallback, indent=4), None
 
 
+def detect_language_by_content(text):
+    """
+    Analyzes text content to guess the programming language.
+    Returns a GtkSourceView language ID or None.
+    """
+    text = text.strip()
+    if not text:
+        return None
+        
+    # 1. Shebang (Strongest Indicator)
+    first_line = text.splitlines()[0]
+    if first_line.startswith("#!"):
+        if "python" in first_line: return "python"
+        if "bash" in first_line or "sh" in first_line: return "sh"
+        if "node" in first_line: return "js"
+        if "perl" in first_line: return "perl"
+        if "ruby" in first_line: return "ruby"
+
+    # 2. JSON (Strict Structure)
+    if (text.startswith("{") and text.endswith("}")) or \
+       (text.startswith("[") and text.endswith("]")):
+        # Quick check if it looks valid-ish
+        try:
+            json.loads(text)
+            return "json"
+        except:
+            pass # Looked like JSON but wasn't valid, falls through
+
+    # 3. HTML / XML (Tags)
+    if "<html" in text.lower() or "<!doctype html" in text.lower():
+        return "html"
+    if "<?xml" in text.lower():
+        return "xml"
+    
+    # 4. Content Heuristics (Keywords)
+    # We check the first ~1000 chars to avoid scanning massive files
+    sample = text[:1000]
+    
+    # Python
+    if "def " in sample and ":" in sample and ("import " in sample or "print(" in sample):
+         return "python"
+    
+    # C / C++
+    if "#include <" in sample or ("int main(" in sample and "{" in sample):
+        return "c" # GtkSourceView often maps c/cpp/chdr sharing ids, 'c' is safe default
+        
+    # JavaScript
+    if "function " in sample or "const " in sample or "let " in sample or "console.log(" in sample:
+        if "{" in sample and "}" in sample:
+            return "js"
+            
+    # CSS
+    if "body {" in sample or "div {" in sample or ".class" in sample:
+        if "{" in sample and ":" in sample and ";" in sample:
+            return "css"
+
+    # Bash (if no shebang)
+    if "echo " in sample and ("if [" in sample or "fi" in sample or "sudo " in sample):
+        return "sh"
+
+    return None
+
+
 def format_xml(text):
     """
     Formats an XML string with 2-space indentation.
