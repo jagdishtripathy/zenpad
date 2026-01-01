@@ -97,7 +97,7 @@ class EditorTab(Gtk.ScrolledWindow):
             self.buffer.set_language(language)
 
     def on_scroll(self, gpointer, event):
-        if (not event.state == Gdk.ModifierType.CONTROL_MASK):
+        if not (event.state & Gdk.ModifierType.CONTROL_MASK):
             return False
 
         good, dx, dy = event.get_scroll_deltas()
