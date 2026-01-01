@@ -2024,8 +2024,8 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         about.set_version("1.1.0")
         about.set_copyright("Copyright © 2025 - Zenpad Developers")
         about.set_comments("Zenpad is a modern, lightweight, and efficient text editor for Linux.\nDesigned for speed and simplicity.\n\n")
-        about.set_website("https://github.com/jagdishtripathy/zenpad")
-        about.set_website_label("Website")
+        about.set_website("https://jagdishtripathy.github.io/zenpad-web/#/")
+        # about.set_website_label("Website") # Show full URL as requested
         
         about.set_authors(["Zenpad Developer Team"])
         about.set_documenters(["Zenpad Documentation Team"])
@@ -2034,6 +2034,30 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         about.set_license_type(Gtk.License.GPL_2_0)
         
         about.set_logo_icon_name("accessories-text-editor")
+
+        # Fix for WSL/Environments where gtk_show_uri fails
+        def on_activate_link(dialog, uri):
+            import webbrowser
+            import platform
+            import subprocess
+            
+            # WSL Detection
+            is_wsl = "microsoft" in platform.uname().release.lower()
+            
+            try:
+                if is_wsl:
+                    # Force opening in Windows default browser
+                    # converting URI to avoid shell injection if possible, but start expects a string
+                    subprocess.run(["cmd.exe", "/c", "start", uri], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    return True
+                else:
+                    webbrowser.open(uri)
+                    return True
+            except Exception as e:
+                print(f"Failed to open link: {e}")
+                return False
+        
+        about.connect("activate-link", on_activate_link)
         
         about.run()
         about.destroy()
