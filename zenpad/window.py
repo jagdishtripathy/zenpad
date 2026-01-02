@@ -4,6 +4,11 @@ import os
 import json
 from .editor import EditorTab
 from zenpad import analysis  # New Analysis Module
+try:
+    from zenpad import markdown_preview
+except (ImportError, ValueError):
+    markdown_preview = None
+from zenpad import diff_viewer # Diff Module
 from zenpad.preferences import PreferencesDialog, Settings
 from gi.repository import GtkSource
 
@@ -96,6 +101,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         # Track current signal handler to disconnect later
         self.current_cursor_handler = None
+        self.md_window = None
         
         # Load Session or Add initial empty tab
         self.load_session()
@@ -667,6 +673,16 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         enc_menu.append(url_dec)
         
         tools_menu.append(enc_item)
+
+        tools_menu.append(Gtk.SeparatorMenuItem())
+
+        md_item = Gtk.MenuItem(label="Markdown Preview")
+        md_item.set_action_name("win.markdown_preview")
+        tools_menu.append(md_item)
+        
+        cmp_item = Gtk.MenuItem(label="Compare with Tab...")
+        cmp_item.set_action_name("win.compare_tabs")
+        tools_menu.append(cmp_item)
         
         menubar.append(tools_item)
         
@@ -1405,7 +1421,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             ("base64_enc", lambda *args: self.on_transform_text("base64_enc")),
             ("base64_dec", lambda *args: self.on_transform_text("base64_dec")),
             ("url_enc", lambda *args: self.on_transform_text("url_enc")),
-            ("url_dec", lambda *args: self.on_transform_text("url_dec"))
+            ("url_dec", lambda *args: self.on_transform_text("url_dec")),
+            ("markdown_preview", self.on_markdown_preview),
+            ("compare_tabs", self.on_compare_tabs)
         ])
 
         for name, callback in actions:
@@ -1616,6 +1634,8 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         editor.buffer.connect("mark-set", lambda w, loc, mark: self.update_match_count(editor))
         # Language changed signal
         editor.buffer.connect("notify::language", lambda w, p: self.update_tab_label(editor))
+        # Content changed signal (for Markdown Preview)
+        editor.buffer.connect("changed", lambda w: self.on_buffer_changed(editor))
         # Search signals
         if editor.search_context:
              editor.search_context.connect("notify::occurrences-count", lambda w, p: self.update_match_count(editor))
@@ -2029,6 +2049,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         # Update window title
         self.update_title(editor)
+        
+        # Update Markdown Preview if open
+        if self.md_window and self.md_window.is_visible():
+            self.md_window.update_content(editor.get_text())
 
     def update_title(self, editor):
         filename = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
@@ -2417,6 +2441,77 @@ class ZenpadWindow(Gtk.ApplicationWindow):
     def on_transform_text(self, mode):
         """Helper to run text transformation"""
         self._run_formatter(lambda text: analysis.transform_text(text, mode), mode)
+
+    def on_markdown_preview(self, action, parameter):
+        if not markdown_preview:
+            self.show_error("Markdown Preview requires 'webkit2' and 'python3-markdown'.\nPlease install dependencies.")
+            return
+
+        if self.md_window and self.md_window.is_visible():
+            self.md_window.present()
+        else:
+            self.md_window = markdown_preview.MarkdownPreviewWindow(self)
+            self.md_window.show_all()
+            # Initial Update
+            page_num = self.notebook.get_current_page()
+            if page_num != -1:
+                editor = self.notebook.get_nth_page(page_num)
+                self.md_window.update_content(editor.get_text())
+
+    def on_buffer_changed(self, editor):
+        """Called when any buffer changes content"""
+        # Only update if preview is open AND the changed buffer is the ACTIVE one
+        if self.md_window and self.md_window.is_visible():
+            page_num = self.notebook.get_current_page()
+            if page_num != -1:
+                active_editor = self.notebook.get_nth_page(page_num)
+                if active_editor == editor:
+                    self.md_window.update_content(editor.get_text())
+
+    def on_compare_tabs(self, action, parameter):
+        current_page = self.notebook.get_current_page()
+        if current_page == -1: return
+        
+        # Gather Tab Titles
+        n_pages = self.notebook.get_n_pages()
+        titles = []
+        for i in range(n_pages):
+            editor = self.notebook.get_nth_page(i)
+            name = os.path.basename(editor.file_path) if editor.file_path else f"Untitled {i+1}"
+            titles.append(name)
+            
+        dialog = diff_viewer.DiffDialog(self, current_page, titles)
+        response = dialog.run()
+        
+        if response == Gtk.ResponseType.OK:
+            other_idx = dialog.get_selected_page_index()
+            if other_idx != -1:
+                # Get Content
+                curr_editor = self.notebook.get_nth_page(current_page)
+                other_editor = self.notebook.get_nth_page(other_idx)
+                
+                text_a = other_editor.get_text()
+                name_a = titles[other_idx]
+                
+                text_b = curr_editor.get_text()
+                name_b = titles[current_page]
+                
+                # Generate Diff (Other -> Current)
+                diff_text = diff_viewer.generate_diff(text_a, text_b, name_a, name_b)
+                
+                if not diff_text:
+                    diff_text = f"Files {name_a} and {name_b} are identical."
+                
+                # Open Result
+                new_editor = self.add_tab(diff_text, f"Diff: {name_a} vs {name_b}")
+                new_editor.view.set_editable(False)
+                
+                # Try setting 'diff' language
+                lang = GtkSource.LanguageManager.get_default().get_language("diff")
+                if lang:
+                    new_editor.buffer.set_language(lang)
+                    
+        dialog.destroy()
 
     def on_toggle_comment(self, widget):
         page_num = self.notebook.get_current_page()
