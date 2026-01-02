@@ -11,6 +11,7 @@ except (ImportError, ValueError):
 from zenpad import diff_viewer # Diff Module
 from zenpad.preferences import PreferencesDialog, Settings
 from gi.repository import GtkSource
+from gi.repository import Pango
 
 class ZenpadWindow(Gtk.ApplicationWindow):
     def __init__(self, application):
