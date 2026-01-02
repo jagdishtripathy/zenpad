@@ -1,3 +1,14 @@
+zenpad (1.2.0) unstable; urgency=medium
+
+  * New Feature: Analysis Tools (Hex, Hash, Encoders/Decoders)
+  * New Feature: Markdown Preview (WebKit2)
+  * New Feature: Diff Tool (Compare Tabs)
+  * Fix: Application freeze on repetitive Convert Log to JSON
+  * Fix: Syntax highlighting for certain file types
+  * Build: Added dependencies for webkit2 and markdown
+
+ -- Jagadish Tripathy <jagadishtripathyforyou@gmail.com>  Thu, 02 Jan 2026 19:30:00 +0530
+
 zenpad (1.1.0) unstable; urgency=medium
 
   * Release 1.1.0: Huge CLI Update

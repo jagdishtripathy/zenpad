@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Pango, Gdk, Gio, GLib
+from gi.repository import Gtk, Gdk, Gio, GLib
 import hashlib
 import os
 import json
@@ -16,7 +16,6 @@ class ZenpadWindow(Gtk.ApplicationWindow):
     def __init__(self, application):
         super().__init__(application=application, title="Zenpad")
         self.set_default_size(800, 600)
-        self.set_default_size(800, 600)
         self.connect("delete-event", self.save_session)
         
         # Accelerator Group
@@ -30,7 +29,6 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         header.props.decoration_layout = ":minimize,maximize,close"
         self.set_titlebar(header)
         
-        # Main Layout Box
         # Main Layout Box
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(main_box)
@@ -2183,7 +2181,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         about.set_modal(True)
         
         about.set_program_name("Zenpad")
-        about.set_version("1.1.0")
+        about.set_version("1.2.0")
         about.set_copyright("Copyright © 2025 - Zenpad Developers")
         about.set_comments("Zenpad is a modern, lightweight, and efficient text editor for Linux.\nDesigned for speed and simplicity.\n\n")
         about.set_website("https://jagdishtripathy.github.io/zenpad-web/#/")
