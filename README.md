@@ -47,7 +47,7 @@ The recommended way to install Zenpad is via the pre-built Debian package.
 2.  **Install** via command line:
 
     ```bash
-    sudo dpkg -i zenpad_1.0.0_all.deb
+    sudo dpkg -i zenpad_1.2.0_all.deb
     sudo apt-get install -f
     ```
 
