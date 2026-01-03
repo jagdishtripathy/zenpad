@@ -1963,7 +1963,6 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         }
         try:
             lang = editor.buffer.get_language().get_name().lower()
-            print(lang)
             if lang == "python 2" or lang == "python 3": lang = "python" # same extension used by both python 2 and 3
 
             suggested_ext = mapping.get(lang, ".txt")
