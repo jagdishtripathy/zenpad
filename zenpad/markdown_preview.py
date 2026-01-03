@@ -18,8 +18,11 @@ class MarkdownPreviewWindow(Gtk.Window):
         self.set_transient_for(parent)
         self.set_type_hint(Gdk.WindowTypeHint.UTILITY) if parent else None
         
-        # WebView
+        # WebView Settings (Disable JS for security)
         self.webview = WebKit2.WebView()
+        settings = self.webview.get_settings()
+        settings.set_enable_javascript(False)
+        settings.set_enable_write_console_messages_to_stdout(False)
         
         # Scrolled Window
         scrolled = Gtk.ScrolledWindow()

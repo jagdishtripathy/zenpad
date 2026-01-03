@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Gdk, Gio, GLib
+from gi.repository import Gtk, Gdk, Gio, GLib, Pango
 import hashlib
 import os
 import json
@@ -2442,7 +2442,25 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
     def on_markdown_preview(self, action, parameter):
         if not markdown_preview:
-            self.show_error("Markdown Preview requires 'webkit2' and 'python3-markdown'.\nPlease install dependencies.")
+            cmd = "sudo apt install gir1.2-webkit2-4.1 python3-markdown"
+            dialog = Gtk.MessageDialog(
+                transient_for=self,
+                flags=0,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Markdown Preview Dependency Missing"
+            )
+            dialog.format_secondary_text(f"Please install dependencies.\n\nCommand:\n{cmd}")
+            
+            # Add Copy Button
+            dialog.add_button("Copy Command", 101)
+            
+            response = dialog.run()
+            if response == 101:
+                clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+                clipboard.set_text(cmd, -1)
+                
+            dialog.destroy()
             return
 
         if self.md_window and self.md_window.is_visible():

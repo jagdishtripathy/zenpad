@@ -157,7 +157,8 @@ def detect_language_by_content(text):
         # Avoid identifying C includes or comparisons like a < b
         # Check for standard XML tag pattern
         if re.search(r'<[a-zA-Z0-9_-]+.*?>', text):
-             if "</body>" in text or "</div>" in text:
+             # Prefer HTML for common interactive/web tags even without body/div
+             if "</body>" in text or "</div>" in text or "<script" in text or "<br" in text or "<p>" in text:
                  return "html"
              return "xml"
     
