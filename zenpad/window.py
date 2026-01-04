@@ -1422,7 +1422,8 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             ("url_enc", lambda *args: self.on_transform_text("url_enc")),
             ("url_dec", lambda *args: self.on_transform_text("url_dec")),
             ("markdown_preview", self.on_markdown_preview),
-            ("compare_tabs", self.on_compare_tabs)
+            ("compare_tabs", self.on_compare_tabs),
+            ("quick_open", self.on_quick_open_action)
         ])
 
         for name, callback in actions:
@@ -1447,6 +1448,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         # Accelerators
         app = self.get_application()
+        app.set_accels_for_action("win.quick_open", ["<Primary>p"])
         app.set_accels_for_action("win.new_tab", ["<Primary>n"])
         app.set_accels_for_action("win.new_window", ["<Primary><Shift>n"])
         app.set_accels_for_action("win.open", ["<Primary>o"])
@@ -2230,6 +2232,12 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         about.run()
         about.destroy()
 
+    def on_toggle_comment(self, widget):
+        page_num = self.notebook.get_current_page()
+        if page_num != -1:
+             editor = self.notebook.get_nth_page(page_num)
+             editor.toggle_comment()
+
     def on_reopen_tab(self, widget):
         if self.closed_tabs:
             path, cursor = self.closed_tabs.pop()
@@ -2257,9 +2265,6 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             text = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             editor.buffer.insert_at_cursor(text)
 
-    def on_sort_lines(self, widget):
-        self._modify_selected_lines(lambda lines: sorted(lines))
-
     def on_join_lines(self, widget):
         page_num = self.notebook.get_current_page()
         if page_num != -1:
@@ -2273,6 +2278,14 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                  buff.delete(start, end)
                  buff.insert(start, new_text)
                  buff.end_user_action()
+
+    def on_sort_lines(self, widget):
+        self._modify_selected_lines(lambda lines: sorted(lines))
+
+    def on_quick_open_action(self, action, param):
+        dialog = QuickOpenDialog(self)
+        dialog.run()
+
 
     def on_trim_whitespace(self, widget):
          self._modify_all_lines(lambda line: line.rstrip())
@@ -2731,3 +2744,108 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         }
         
         return mapping.get(lang_id, "text-x-generic")
+
+
+class QuickOpenDialog(Gtk.Dialog):
+    def __init__(self, parent):
+        super().__init__(title="Quick Open", transient_for=parent, flags=0)
+        self.set_default_size(500, 300)
+        self.set_modal(True)
+        
+        self.parent_window = parent
+        self.all_files = []
+        
+        # UI Setup
+        box = self.get_content_area()
+        box.set_spacing(5)
+        
+        # Search Entry
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text("Type to search files...")
+        self.search_entry.connect("search-changed", self.on_search_changed)
+        self.search_entry.connect("activate", self.on_activated) # Enter key
+        box.pack_start(self.search_entry, False, False, 0)
+        
+        # Scrolled List
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_min_content_height(250)
+        
+        self.listbox = Gtk.ListBox()
+        self.listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.listbox.connect("row-activated", self.on_row_activated)
+        scrolled.add(self.listbox)
+        
+        box.pack_start(scrolled, True, True, 0)
+        
+        self.show_all()
+        
+        # Populate Async-ish (on init)
+        self.populate_files()
+        
+    def populate_files(self):
+        # Recursively find files in CWD
+        cwd = os.getcwd()
+        exclude_dirs = {'.git', '__pycache__', 'node_modules', 'venv', '.gemini'}
+        
+        # This could be slow for huge repos, but fine for now
+        # Ideally should be done in a thread, but keep it simple for v1.3.0
+        for root, dirs, files in os.walk(cwd):
+            # Prune exclusions
+            dirs[:] = [d for d in dirs if d not in exclude_dirs]
+            
+            for file in files:
+                full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_path, cwd)
+                self.all_files.append((rel_path, full_path))
+        
+        # Initial populate (limit to 50?)
+        self.refresh_list("")
+
+    def refresh_list(self, query):
+        # Clear existing
+        for child in self.listbox.get_children():
+            self.listbox.remove(child)
+            
+        query = query.lower()
+        count = 0
+        limit = 30
+        
+        for rel_path, full_path in self.all_files:
+            if count >= limit: break
+            
+            if not query or query in rel_path.lower():
+                row = Gtk.ListBoxRow()
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+                box.set_spacing(10)
+                
+                label = Gtk.Label(label=rel_path)
+                label.set_xalign(0)
+                box.pack_start(label, True, True, 0)
+                
+                # Dim label for full path? No, simple is better.
+                
+                row.add(box)
+                row.file_path = full_path # Store specific data on row
+                self.listbox.add(row)
+                count += 1
+                
+        self.listbox.show_all()
+        # Select first result if any
+        if self.listbox.get_children():
+            self.listbox.select_row(self.listbox.get_children()[0])
+
+    def on_search_changed(self, entry):
+        self.refresh_list(entry.get_text())
+
+    def on_activated(self, entry):
+        row = self.listbox.get_selected_row()
+        if row:
+            self.open_file(row.file_path)
+
+    def on_row_activated(self, listbox, row):
+        self.open_file(row.file_path)
+
+    def open_file(self, path):
+        self.parent_window.open_file_from_path(path)
+        self.destroy()
