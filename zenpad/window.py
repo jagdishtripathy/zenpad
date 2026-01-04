@@ -1953,6 +1953,31 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
             Gtk.STOCK_SAVE, Gtk.ResponseType.OK,
         )
+        mapping = {
+            "python": ".py",
+            "perl": ".pl",
+            "ruby": ".rb",
+            "c": ".c",
+            "c++": ".cpp",
+            "java": ".java",
+            "javascript": ".js",
+            "json": ".json",
+            "xml": ".xml",
+            "html": ".html",
+            "css": ".css",
+            "sh": ".sh",
+            "bash": ".bash",
+            "markdown": ".md"
+        }
+        try:
+            lang = editor.buffer.get_language().get_name().lower()
+            if lang == "python 2" or lang == "python 3": lang = "python" # same extension used by both python 2 and 3
+
+            suggested_ext = mapping.get(lang, ".txt")
+            dialog.set_current_name("Untitled"+suggested_ext)
+        except Exception as e:
+            dialog.set_current_name("Untitled.txt") # Failed to get language so just suggest .txt
+
         dialog.set_do_overwrite_confirmation(True)
 
         response = dialog.run()
