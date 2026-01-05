@@ -154,6 +154,10 @@ class EditorTab(Gtk.ScrolledWindow):
         - Check for openers: {, [, (, :
         - Increase indent if opener found.
         """
+        # Respect Read-Only
+        if not self.view.get_editable():
+            return False
+
         keyval = event.keyval
         if keyval in [Gdk.KEY_Return, Gdk.KEY_KP_Enter]:
             if (event.state & Gdk.ModifierType.SHIFT_MASK) or (event.state & Gdk.ModifierType.CONTROL_MASK):

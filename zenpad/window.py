@@ -119,12 +119,14 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         new_item.set_image(Gtk.Image.new_from_icon_name("document-new", Gtk.IconSize.MENU))
         new_item.set_always_show_image(True)
         new_item.connect("activate", self.on_new_tab)
+        new_item.add_accelerator("activate", self.accel_group, Gdk.KEY_n, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(new_item)
 
         new_window_item = Gtk.ImageMenuItem(label="New Window")
         new_window_item.set_image(Gtk.Image.new_from_icon_name("window-new", Gtk.IconSize.MENU))
         new_window_item.set_always_show_image(True)
         new_window_item.connect("activate", self.on_new_window)
+        new_window_item.add_accelerator("activate", self.accel_group, Gdk.KEY_n, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(new_window_item)
         
         # Open
@@ -132,6 +134,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         open_item.set_image(Gtk.Image.new_from_icon_name("document-open", Gtk.IconSize.MENU))
         open_item.set_always_show_image(True)
         open_item.connect("activate", self.on_open_file)
+        open_item.add_accelerator("activate", self.accel_group, Gdk.KEY_o, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(open_item)
         
         # Recent (Placeholder using Gtk.RecentChooserMenu if needed, but keeping simple for now)
@@ -148,18 +151,21 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         save_item.set_image(Gtk.Image.new_from_icon_name("document-save", Gtk.IconSize.MENU))
         save_item.set_always_show_image(True)
         save_item.connect("activate", self.on_save_file)
+        save_item.add_accelerator("activate", self.accel_group, Gdk.KEY_s, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(save_item)
         
         save_as_item = Gtk.ImageMenuItem(label="Save As...")
         save_as_item.set_image(Gtk.Image.new_from_icon_name("document-save-as", Gtk.IconSize.MENU))
         save_as_item.set_always_show_image(True)
         save_as_item.connect("activate", self.on_save_as)
+        save_as_item.add_accelerator("activate", self.accel_group, Gdk.KEY_s, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(save_as_item)
 
         save_all_item = Gtk.ImageMenuItem(label="Save All")
         save_all_item.set_image(Gtk.Image.new_from_icon_name("document-save-all", Gtk.IconSize.MENU))
         save_all_item.set_always_show_image(True)
         save_all_item.connect("activate", self.on_save_all)
+        save_all_item.add_accelerator("activate", self.accel_group, Gdk.KEY_s, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.MOD1_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(save_all_item)
         
         file_menu.append(Gtk.SeparatorMenuItem())
@@ -169,6 +175,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         reload_item.set_image(Gtk.Image.new_from_icon_name("view-refresh", Gtk.IconSize.MENU))
         reload_item.set_always_show_image(True)
         reload_item.connect("activate", self.on_reload)
+        reload_item.add_accelerator("activate", self.accel_group, Gdk.KEY_r, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(reload_item)
         
         file_menu.append(Gtk.SeparatorMenuItem())
@@ -178,6 +185,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         print_item.set_image(Gtk.Image.new_from_icon_name("document-print", Gtk.IconSize.MENU))
         print_item.set_always_show_image(True)
         print_item.connect("activate", self.on_print)
+        print_item.add_accelerator("activate", self.accel_group, Gdk.KEY_p, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(print_item)
         
         file_menu.append(Gtk.SeparatorMenuItem())
@@ -210,6 +218,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         quit_item.set_image(Gtk.Image.new_from_icon_name("application-exit", Gtk.IconSize.MENU))
         quit_item.set_always_show_image(True)
         quit_item.connect("activate", lambda w: self.close()) # Quit app?
+        quit_item.add_accelerator("activate", self.accel_group, Gdk.KEY_q, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(quit_item)
         
         menubar.append(file_item)
@@ -624,14 +633,17 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         # Formatters
         fmt_json = Gtk.MenuItem(label="Format JSON")
         fmt_json.set_action_name("win.format_json")
+        fmt_json.add_accelerator("activate", self.accel_group, Gdk.KEY_J, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         tools_menu.append(fmt_json)
         
         fmt_xml = Gtk.MenuItem(label="Format XML")
         fmt_xml.set_action_name("win.format_xml")
+        fmt_xml.add_accelerator("activate", self.accel_group, Gdk.KEY_X, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         tools_menu.append(fmt_xml)
 
         convert_item = Gtk.MenuItem(label="Convert Log to JSON")
         convert_item.set_action_name("win.convert_json")
+        convert_item.add_accelerator("activate", self.accel_group, Gdk.KEY_L, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         tools_menu.append(convert_item)
         
         tools_menu.append(Gtk.SeparatorMenuItem())
@@ -639,6 +651,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         # Hex View
         hex_item = Gtk.MenuItem(label="Hex View")
         hex_item.set_action_name("win.hex_view")
+        hex_item.add_accelerator("activate", self.accel_group, Gdk.KEY_B, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         tools_menu.append(hex_item)
 
         hash_item = Gtk.MenuItem(label="Calculate Hash")
@@ -677,10 +690,12 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
         md_item = Gtk.MenuItem(label="Markdown Preview")
         md_item.set_action_name("win.markdown_preview")
+        md_item.add_accelerator("activate", self.accel_group, Gdk.KEY_M, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         tools_menu.append(md_item)
         
         cmp_item = Gtk.MenuItem(label="Compare with Tab...")
         cmp_item.set_action_name("win.compare_tabs")
+        cmp_item.add_accelerator("activate", self.accel_group, Gdk.KEY_D, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         tools_menu.append(cmp_item)
         
         menubar.append(tools_item)
@@ -1596,6 +1611,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             editor.detect_language(path)
         else:
             editor.file_path = None
+        
+        # Inherit Viewer Mode
+        editor.view.set_editable(not self.doc_viewer_mode)
         
         # Tab Label (with close button)
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
