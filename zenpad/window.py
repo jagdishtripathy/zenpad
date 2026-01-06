@@ -475,9 +475,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                 group = item
             else:
                 item = Gtk.RadioMenuItem(label=scheme_id, group=group)
-            
-            if scheme_id == "tango":
-                 item.set_active(True)
+
+            if self.settings.get("theme") == item.get_label():
+                item.set_active(True)
             
             item.connect("activate", self.on_change_scheme, scheme_id)
             scheme_menu.append(item)
@@ -1119,6 +1119,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             for i in range(n_pages):
                 editor = self.notebook.get_nth_page(i)
                 editor.set_scheme(scheme_id)
+
+            self.settings.set("theme", scheme_id)
+            self.apply_setting("theme", scheme_id)
 
     def on_toggle_line_numbers(self, widget):
         self.show_line_numbers = widget.get_active()
