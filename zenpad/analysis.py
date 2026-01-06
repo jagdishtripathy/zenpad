@@ -4,6 +4,292 @@ import binascii
 import re
 import csv
 import io
+import datetime
+import dataclasses
+from typing import List, Dict, Optional, Any, Tuple
+
+# --- Smart Log Engine (Phase 1) ---
+
+@dataclasses.dataclass
+class LogEntry:
+    """ECS-compatible log event structure for SOC tools (Splunk/ELK/Wazuh)"""
+    timestamp: str = ""         # @timestamp (ISO 8601)
+    timestamp_raw: str = ""     # Original timestamp string
+    source_type: str = ""       # Profile name (syslog, access, kernel, etc.)
+    level: str = ""             # log.level
+    message: str = ""           # Main content
+    raw_log: str = ""           # Original line(s) preserved
+    host: str = ""              # host.name
+    program: str = ""           # process.name / app
+    pid: str = ""               # process.pid
+    # Additional fields for specific log types
+    extra: Dict[str, Any] = dataclasses.field(default_factory=dict)
+
+    def to_ecs_dict(self) -> Dict[str, Any]:
+        """Output flat ECS-compatible dict (only non-empty fields, raw_log last)"""
+        result = {}
+        # Core fields first
+        if self.timestamp:
+            result["@timestamp"] = self.timestamp
+        if self.timestamp_raw:
+            result["timestamp_raw"] = self.timestamp_raw
+        if self.source_type:
+            result["source_type"] = self.source_type
+        if self.level:
+            result["level"] = self.level
+        if self.host:
+            result["host"] = self.host
+        if self.program:
+            result["program"] = self.program
+        if self.pid:
+            result["pid"] = self.pid
+        if self.message:
+            result["message"] = self.message
+        # Extra fields (ip, status, bytes, etc.)
+        result.update(self.extra)
+        # raw_log always last
+        if self.raw_log:
+            result["raw_log"] = self.raw_log
+        return result
+
+@dataclasses.dataclass
+class LogProfile:
+    name: str
+    regex: re.Pattern
+    date_fmt: Optional[str] = None
+    level_map: Optional[Dict[str, str]] = None
+
+    def normalize_level(self, raw_lvl: str) -> str:
+        if not self.level_map:
+            return raw_lvl.upper()
+        return self.level_map.get(raw_lvl.upper(), raw_lvl.upper())
+
+    def parse_date(self, raw_date: str) -> Tuple[str, bool]:
+        """Returns (normalized_date, success)"""
+        # Strategy:
+        # 1. Try profile's specific format
+        # 2. Try common formats (ISO, simple)
+        # 3. Fail
+        
+        candidates = []
+        if self.date_fmt:
+            candidates.append(self.date_fmt)
+        
+        # Common fallbacks
+        candidates.extend([
+            "%Y-%m-%d %H:%M:%S,%f",
+            "%Y-%m-%d %H:%M:%S",
+            "%d/%b/%Y:%H:%M:%S %z", # Common Log Format
+            "%Y-%m-%dT%H:%M:%S.%fZ",
+            "%Y-%m-%dT%H:%M:%SZ"
+        ])
+
+        for fmt in candidates:
+            try:
+                dt = datetime.datetime.strptime(raw_date, fmt)
+                return dt.isoformat(), True
+            except ValueError:
+                continue
+        
+        return raw_date, False
+
+# --- Profiles Registry ---
+
+LOG_PROFILES = [
+    # 1. Java / Spring Standard
+    # Example: [2010-04-24 07:51:54,393] INFO - [main] Message...
+    LogProfile(
+        name="Java Application Log",
+        regex=re.compile(r'^\[(?P<ts>.*?)\]\s+(?P<lvl>\w+)\s+-\s+\[(?P<thread>.*?)\]\s+(?P<msg>.*)'),
+        date_fmt="%Y-%m-%d %H:%M:%S,%f",
+        level_map={"INF": "INFO", "ERR": "ERROR", "WRN": "WARN", "DBG": "DEBUG"}
+    ),
+
+    # 2. Web Access Log (Combined)
+    # Example: 127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /index.html" 200 2326
+    LogProfile(
+        name="Web Access Log",
+        regex=re.compile(r'^(?P<ip>\S+)\s\S+\s\S+\s\[(?P<ts>.*?)\]\s"(?P<req>.*?)"\s(?P<status>\d{3})\s(?P<bytes>\S+).*'),
+        date_fmt="%d/%b/%Y:%H:%M:%S %z"
+    ),
+
+    # 3. Simple Syslog / Message
+    # Example: 2023-10-27 10:00:00 INFO Some message
+    LogProfile(
+        name="Simple Timestamp Log",
+        regex=re.compile(r'^(?P<ts>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}(?:,\d{3})?)\s+(?P<lvl>\w+)\s+(?P<msg>.*)'),
+        date_fmt="%Y-%m-%d %H:%M:%S"
+    ),
+
+    # 4. Standard Linux Syslog (RFC 3164)
+    # Example: Oct 11 22:14:15 myhost sshd[1234]: Failed password...
+    LogProfile(
+        name="Linux Syslog (Standard)",
+        regex=re.compile(r'^(?P<ts>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s+(?P<host>\S+)\s+(?P<app>[\w\-\.]+)(?:\[(?P<pid>\d+)\])?:\s+(?P<msg>.*)'),
+        # RFC 3164 does not have year. We leave it raw for now.
+        date_fmt=None 
+    ),
+
+    # 5. Linux Kernel Ring Buffer (dmesg)
+    # Example: [    0.000000] Linux version...
+    LogProfile(
+        name="Linux Kernel Log",
+        regex=re.compile(r'^\[\s*(?P<ts_rel>\d+\.\d+)\]\s+(?P<msg>.*)'),
+        # Relative timestamp, no absolute date format
+        date_fmt=None
+    ),
+
+    # 6. Nginx Error Log
+    # Example: 2023/10/27 10:00:00 [error] 1234#0: *1 connection timed out...
+    LogProfile(
+        name="Nginx Error Log",
+        regex=re.compile(r'^(?P<ts>\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2})\s\[(?P<lvl>\w+)\]\s(?P<pid>\d+)#(?P<tid>\d+):\s(?P<msg>.*)'),
+        date_fmt="%Y/%m/%d %H:%M:%S"
+    ),
+
+    # 7. Apache Error Log
+    # Example: [Fri Oct 27 10:00:00.123456 2023] [core:error] [pid 1234] ...
+    LogProfile(
+        name="Apache Error Log",
+        regex=re.compile(r'^\[(?P<ts>.*?)\]\s\[(?P<module>.*?):(?P<lvl>\w+)\]\s\[pid\s(?P<pid>\d+)\]\s(?P<msg>.*)'),
+        # Complex Apache timestamp, letting it fall back to generic parser or raw
+        date_fmt=None
+    )
+]
+
+GENERIC_PROFILE = LogProfile(name="Generic Log (Fallback)", regex=re.compile(r'^(?P<msg>.*)'))
+
+def parse_log(text: str) -> List[Dict[str, Any]]:
+    """
+    Smart Log Engine (Phase 3 - SOC Compatible).
+    Returns a flat array of ECS-compatible events.
+    Output format matches Splunk/ELK/Wazuh expectations.
+    
+    Note: JSON detection is handled by the caller (window.py) to allow user override.
+    """
+    if not text:
+        return []
+
+    lines = text.splitlines()
+    
+    # 2. Detect Best Profile
+    sample_lines = [l for l in lines[:50] if l.strip()]
+    best_profile = GENERIC_PROFILE
+    best_score = 0.0
+
+    if sample_lines:
+        for profile in LOG_PROFILES:
+            matches = sum(1 for line in sample_lines if profile.regex.match(line.strip()))
+            score = matches / len(sample_lines)
+            if score > best_score:
+                best_score = score
+                best_profile = profile
+    
+    # Fall back to Generic if no good match
+    if best_score < 0.4:
+        best_profile = GENERIC_PROFILE
+
+    # 3. Parse Lines
+    events = []
+    current_entry: Optional[LogEntry] = None
+    
+    for line in lines:
+        raw_line = line.rstrip('\r\n')
+        clean_line = line.strip()
+        
+        if not clean_line:
+            # Preserve empty lines in multiline context
+            if current_entry:
+                current_entry.raw_log += "\n"
+                current_entry.message += "\n"
+            continue
+        
+        # Generic Profile: One event per line, no parsing
+        if best_profile == GENERIC_PROFILE:
+            events.append(LogEntry(
+                source_type="plain",
+                message=raw_line,
+                raw_log=raw_line
+            ).to_ecs_dict())
+            continue
+        
+        # Try to match structured profile
+        match = best_profile.regex.match(clean_line)
+        
+        if match:
+            # Flush previous entry
+            if current_entry:
+                events.append(current_entry.to_ecs_dict())
+            
+            groups = match.groupdict()
+            
+            # Extract timestamp
+            raw_ts = groups.get("ts", "") or groups.get("ts_rel", "")
+            norm_ts, _ = best_profile.parse_date(raw_ts) if raw_ts else (raw_ts, False)
+            
+            # Extract level
+            level = best_profile.normalize_level(groups.get("lvl", ""))
+            
+            # Extract message
+            msg = groups.get("msg", "")
+            # Special handling for web access logs
+            if "req" in groups:
+                msg = f"{groups.get('req', '')} [{groups.get('status', '')}]"
+            
+            # Extract host/program/pid (ECS fields)
+            host = groups.get("host", "")
+            program = groups.get("app", "") or groups.get("module", "")
+            pid = groups.get("pid", "")
+            
+            # Collect extra fields (ip, thread, etc.)
+            extra = {}
+            for k, v in groups.items():
+                if k not in ["ts", "ts_rel", "lvl", "msg", "req", "host", "app", "module", "pid"] and v:
+                    extra[k] = v
+            
+            # Map profile to source_type
+            source_type_map = {
+                "Java Application Log": "java",
+                "Web Access Log": "access",
+                "Simple Timestamp Log": "simple",
+                "Linux Syslog (Standard)": "syslog",
+                "Linux Kernel Log": "kernel",
+                "Nginx Error Log": "nginx",
+                "Apache Error Log": "apache"
+            }
+            source_type = source_type_map.get(best_profile.name, "unknown")
+            
+            current_entry = LogEntry(
+                timestamp=norm_ts,
+                timestamp_raw=raw_ts,
+                source_type=source_type,
+                level=level,
+                message=msg,
+                raw_log=raw_line,
+                host=host,
+                program=program,
+                pid=pid or "",
+                extra=extra
+            )
+        else:
+            # Multiline continuation (stack traces, etc.)
+            if current_entry:
+                current_entry.raw_log += "\n" + raw_line
+                current_entry.message += "\n" + raw_line
+            else:
+                # Orphan line at start
+                events.append(LogEntry(
+                    source_type="plain",
+                    message=raw_line,
+                    raw_log=raw_line
+                ).to_ecs_dict())
+    
+    # Flush final entry
+    if current_entry:
+        events.append(current_entry.to_ecs_dict())
+
+    return events
+
 
 def format_json(text):
     """
@@ -22,79 +308,23 @@ def format_json(text):
 
 def convert_to_json(text):
     """
-    Converter that transforms Web Access Logs into JSON.
-    Strictly parses Common Log Format (Combined).
-    Fallback: Wraps lines into JSON objects.
+    Wrapper for Smart Log Engine to match Window interface.
+    Returns: (success, json_string, error_msg)
     """
-    text = text.strip()
-    if not text:
-        return False, "", "Empty text"
+    result = parse_log(text)
+    
+    # Handle empty result
+    if not result:
+        return False, "", "No log entries found"
 
-    lines = text.splitlines()
-    
-    # Strategy: Web Access Logs (Regex)
-    # Common Log Format (Combined): IP - - [Date] "Request" Status Size "Referer" "UA"
-    # Regex Breakdown:
-    # ^(\S+)            IP
-    # \s\S+\s\S+\s      Ident Auth (skip)
-    # \[(.*?)\]         Timestamp
-    # \s"(.*?)"         Request (Method Path Proto)
-    # \s(\d{3})         Status
-    # \s(\S+)           Size
-    # \s"(.*?)"         Referer
-    # \s"(.*?)"         User Agent
-    
-    log_pattern = re.compile(r'^(\S+)\s\S+\s\S+\s\[(.*?)\]\s"(.*?)"\s(\d{3})\s(\S+)\s"(.*?)"\s"(.*?)"')
-    
-    # We attempt to parse assuming it is a log file. 
-    # If the first few lines don't match, we might want to fallback immediately, 
-    # but the user requested strict line-by-line parsing.
-    
-    logs = []
-    # Check if it looks like a log file at all? 
-    # Actually, we will just try to parse every line. Matches get structured, others get _raw.
-    
-    # Optimization: Check match on first non-empty line
-    first_line = next((l for l in lines if l.strip()), "")
-    is_log_format = bool(log_pattern.match(first_line))
-    
-    if is_log_format:
-        for line in lines:
-            line = line.strip()
-            if not line: continue
-            
-            match = log_pattern.match(line)
-            if match:
-                g = match.groups()
-                # Parse Request
-                req_str = g[2]
-                method, path, proto = "UNKNOWN", req_str, ""
-                if " " in req_str:
-                    parts = req_str.split()
-                    if len(parts) >= 2:
-                        method = parts[0]
-                        path = parts[1]
-                
-                entry = {
-                    "ip": g[0],
-                    "timestamp": g[1],
-                    "method": method,
-                    "path": path,
-                    "status": int(g[3]),
-                    "bytes": int(g[4]) if g[4].isdigit() else 0,
-                    "referer": g[5],
-                    "user_agent": g[6]
-                }
-                logs.append(entry)
-            else:
-                 logs.append({"_error": "Parse Failed", "_raw": line})
-        return True, json.dumps(logs, indent=4), None
+    try:
+        json_str = json.dumps(result, indent=2)
+        return True, json_str, None
+    except Exception as e:
+        return False, "", str(e)
 
-    # Fallback: Just wrap lines (User explicit request: "Logs must be parsed line-by-line")
-    # If regex failed completely on first line, we assume it's generic text.
-    fallback = [{"line": i+1, "content": line} for i, line in enumerate(lines)]
-    return True, json.dumps(fallback, indent=4), None
 
+# --- Previous Utils (Preserved) ---
 
 def detect_language_by_content(text):
     """

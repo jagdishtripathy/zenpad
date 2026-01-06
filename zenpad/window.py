@@ -643,7 +643,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
         convert_item = Gtk.MenuItem(label="Convert Log to JSON")
         convert_item.set_action_name("win.convert_json")
-        convert_item.add_accelerator("activate", self.accel_group, Gdk.KEY_L, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
+        convert_item.add_accelerator("activate", self.accel_group, Gdk.KEY_L, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.MOD1_MASK, Gtk.AccelFlags.VISIBLE)
         tools_menu.append(convert_item)
         
         tools_menu.append(Gtk.SeparatorMenuItem())
@@ -2350,18 +2350,38 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         editor = self.notebook.get_nth_page(page_num)
         text = editor.get_text()
         
-        # 1. Prevent Recursive Freezing
-        # Strict Check: If language says JSON OR content looks like a JSON Object/Array
-        # This catches cases where auto-detection hasn't fired yet but content is clearly JSON.
+        # 1. JSON Detection with Override Option
         lang = editor.buffer.get_language()
         is_json_lang = (lang and "json" in lang.get_id())
         
         clean_text = text.strip()
-        looks_like_json = clean_text.startswith("{") or clean_text.startswith("[")
         
-        if is_json_lang or looks_like_json:
-            self.show_error("Source is identified as JSON.\nConverting again avoids recursive wrapping.")
-            return
+        # Check if it looks like JSON
+        is_actually_json = False
+        if clean_text.startswith("{") or clean_text.startswith("["):
+            try:
+                json.loads(clean_text)
+                is_actually_json = True
+            except json.JSONDecodeError:
+                is_actually_json = False
+        
+        # If JSON detected, ask user if they want to convert anyway
+        if is_actually_json:
+            dialog = Gtk.MessageDialog(
+                transient_for=self,
+                modal=True,
+                message_type=Gtk.MessageType.QUESTION,
+                buttons=Gtk.ButtonsType.YES_NO,
+                text="Source appears to be valid JSON"
+            )
+            dialog.format_secondary_text(
+                "This content is already valid JSON. Do you want to re-parse it as logs anyway?"
+            )
+            response = dialog.run()
+            dialog.destroy()
+            
+            if response != Gtk.ResponseType.YES:
+                return
 
         text = editor.get_text()
         
