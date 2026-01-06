@@ -1058,6 +1058,17 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             editor.buffer.copy_clipboard(clipboard)
 
     def on_paste(self, widget):
+        # Check if an Entry widget (like search bar) has focus
+        focused = self.get_focus()
+        if isinstance(focused, Gtk.Entry):
+            # Let the Entry handle paste natively
+            clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+            text = clipboard.wait_for_text()
+            if text:
+                focused.paste_clipboard()
+            return
+        
+        # Default: paste to editor
         page_num = self.notebook.get_current_page()
         if page_num != -1:
             editor = self.notebook.get_nth_page(page_num)
@@ -1246,6 +1257,14 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             buff.delete(iter_start, iter_end)
 
     def on_select_all(self, widget):
+        # Check if an Entry widget (like search bar) has focus
+        focused = self.get_focus()
+        if isinstance(focused, Gtk.Entry):
+            # Select all text in the Entry
+            focused.select_region(0, -1)
+            return
+        
+        # Default: select all in editor
         page_num = self.notebook.get_current_page()
         if page_num != -1:
             editor = self.notebook.get_nth_page(page_num)
@@ -1370,21 +1389,29 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             editor.search_context.replace_all(self.replace_entry.get_text(), -1)
 
     def on_find_clicked(self, mode="find"):
+        from gi.repository import GLib
+        
         # Toggle reveal
         reveal = self.search_bar_revealer.get_reveal_child()
         
-        # If hidden, show
+        # If hidden, show and focus after reveal completes
         if not reveal:
             self.search_bar_revealer.set_reveal_child(True)
-            self.search_entry.grab_focus()
+            # Defer focus to ensure widget is mapped and visible
+            GLib.idle_add(self._focus_search_entry)
         else:
-            # If already shown, just focus unless we want to close (usually Ctrl+F focuses)
-            self.search_entry.grab_focus()
+            # Already shown, just focus
+            GLib.idle_add(self._focus_search_entry)
             
         if mode == "replace":
             self.replace_revealer.set_reveal_child(True)
         else:
             self.replace_revealer.set_reveal_child(False)
+    
+    def _focus_search_entry(self):
+        """Helper to focus search entry after GTK event loop processes"""
+        self.search_entry.grab_focus()
+        return False  # Don't repeat
 
     def create_actions(self):
         # Action Map
