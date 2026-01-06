@@ -1090,21 +1090,21 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                 editor.buffer.redo()
 
     def on_zoom_in(self, widget, param=None):
-        n_pages = self.notebook.get_n_pages()
-        for i in range(n_pages):
-            editor = self.notebook.get_nth_page(i)
+        page_num = self.notebook.get_current_page()
+        if page_num != -1:
+            editor = self.notebook.get_nth_page(page_num)
             editor.zoom_in()
 
     def on_zoom_out(self, widget, param=None):
-        n_pages = self.notebook.get_n_pages()
-        for i in range(n_pages):
-            editor = self.notebook.get_nth_page(i)
+        page_num = self.notebook.get_current_page()
+        if page_num != -1:
+            editor = self.notebook.get_nth_page(page_num)
             editor.zoom_out()
 
     def on_zoom_reset(self, widget=None, param=None):
-        n_pages = self.notebook.get_n_pages()
-        for i in range(n_pages):
-            editor = self.notebook.get_nth_page(i)
+        page_num = self.notebook.get_current_page()
+        if page_num != -1:
+            editor = self.notebook.get_nth_page(page_num)
             editor.zoom_reset()
 
     def on_select_font(self, widget):
