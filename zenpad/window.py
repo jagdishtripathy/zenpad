@@ -1118,8 +1118,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             n_pages = self.notebook.get_n_pages()
             for i in range(n_pages):
                 editor = self.notebook.get_nth_page(i)
-                self.settings.set("theme", scheme_id)
-                self.apply_setting("theme", scheme_id)
+                editor.set_scheme(scheme_id)
+
+            self.settings.set("theme", scheme_id)
+            self.apply_setting("theme", scheme_id)
 
     def on_toggle_line_numbers(self, widget):
         self.show_line_numbers = widget.get_active()
