@@ -137,9 +137,12 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         open_item.add_accelerator("activate", self.accel_group, Gdk.KEY_o, Gdk.ModifierType.CONTROL_MASK, Gtk.AccelFlags.VISIBLE)
         file_menu.append(open_item)
         
-        # Recent (Placeholder using Gtk.RecentChooserMenu if needed, but keeping simple for now)
+        # Recent Files (limited to 4 for cleaner menu)
         recent_item = Gtk.MenuItem(label="Open Recent")
         recent_menu = Gtk.RecentChooserMenu()
+        recent_menu.set_limit(4)
+        recent_menu.set_show_not_found(False)
+        recent_menu.set_sort_type(Gtk.RecentSortType.MRU)  # Most Recently Used first
         recent_menu.connect("item-activated", self.on_open_recent)
         recent_item.set_submenu(recent_menu)
         file_menu.append(recent_item)
