@@ -1573,13 +1573,34 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         page_num = self.notebook.get_current_page()
         if page_num == -1: return
         editor = self.notebook.get_nth_page(page_num)
-        if editor.file_path and os.path.exists(editor.file_path):
-            try:
-                with open(editor.file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                editor.set_text(content)
-            except Exception as e:
-                print(f"Error reloading: {e}")
+        
+        if not editor.file_path or not os.path.exists(editor.file_path):
+            return
+        
+        # Warn if there are unsaved changes
+        if editor.buffer.get_modified():
+            dialog = Gtk.MessageDialog(
+                transient_for=self,
+                modal=True,
+                message_type=Gtk.MessageType.WARNING,
+                buttons=Gtk.ButtonsType.YES_NO,
+                text="Unsaved changes will be lost"
+            )
+            dialog.format_secondary_text(
+                "This file has unsaved changes. Reload from disk anyway?"
+            )
+            response = dialog.run()
+            dialog.destroy()
+            if response != Gtk.ResponseType.YES:
+                return
+        
+        try:
+            with open(editor.file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            editor.set_text(content)
+            editor.buffer.set_modified(False)
+        except Exception as e:
+            self.show_error(f"Error reloading: {e}")
 
     def on_print(self, widget, param=None):
         # Basic print scaffolding
