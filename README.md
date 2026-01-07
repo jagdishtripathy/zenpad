@@ -65,7 +65,7 @@ Zenpad can be launched from the application menu or via the terminal.
 
 **Command Line Arguments:**
 ```bash
-zenpad [filename]....
+zenpad [filename]...
 ```
 
 **Examples:**
