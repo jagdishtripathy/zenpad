@@ -646,7 +646,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
         convert_item = Gtk.MenuItem(label="Convert Log to JSON")
         convert_item.set_action_name("win.convert_json")
-        convert_item.add_accelerator("activate", self.accel_group, Gdk.KEY_L, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.MOD1_MASK, Gtk.AccelFlags.VISIBLE)
+        convert_item.add_accelerator("activate", self.accel_group, Gdk.KEY_E, Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.SHIFT_MASK, Gtk.AccelFlags.VISIBLE)
         tools_menu.append(convert_item)
         
         tools_menu.append(Gtk.SeparatorMenuItem())
@@ -1280,8 +1280,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             editor = self.notebook.get_nth_page(page_num)
             buff = editor.buffer
             bounds = buff.get_selection_bounds()
-            if bounds and len(bounds) == 3 and bounds[0]:
-                start, end = bounds[1], bounds[2]
+            # get_selection_bounds() returns (start_iter, end_iter) or empty tuple
+            if bounds:
+                start, end = bounds
                 text = buff.get_text(start, end, True)
                 
                 new_text = text
