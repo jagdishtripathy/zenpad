@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="zenpad",
-    version="1.2.0",
+    version="1.3.0",
     description="A modern, lightweight text editor with features for coding and general use.",
     author="Zenpad Team",
     packages=find_packages(),

@@ -1,6 +1,6 @@
 # Zenpad
 
-![Version 1.2.0](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version 1.3.0](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![License GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-green.svg)
 ![Platform Linux](https://img.shields.io/badge/platform-linux-lightgrey.svg)
 
@@ -47,7 +47,7 @@ The recommended way to install Zenpad is via the pre-built Debian package.
 2.  **Install** via command line:
 
     ```bash
-    sudo dpkg -i zenpad_1.2.0_all.deb
+    sudo dpkg -i zenpad_1.3.0_all.deb
     sudo apt-get install -f
     ```
 
