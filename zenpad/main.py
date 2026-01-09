@@ -95,6 +95,8 @@ class ZenpadApplication(Gtk.Application):
         return 0
 
 def main():
+    import signal
+    
     app = ZenpadApplication()
 
     # Parse startup flags to determine if we need a new instance
@@ -109,9 +111,22 @@ def main():
         flags |= Gio.ApplicationFlags.NON_UNIQUE
         app.set_flags(flags)
 
+    def handle_shutdown_signal(signum, frame):
+        """Handle SIGINT/SIGTERM by saving session before exit."""
+        if app.window and hasattr(app.window, 'session_manager'):
+            if app.window.settings.get("restore_session"):
+                app.window.session_manager.save(app.window)
+        app.quit()
+    
+    # Register signal handlers
+    signal.signal(signal.SIGINT, handle_shutdown_signal)
+    signal.signal(signal.SIGTERM, handle_shutdown_signal)
+
     try:
         return app.run(sys.argv)
     except KeyboardInterrupt:
+        # Fallback for any unhandled keyboard interrupt
+        handle_shutdown_signal(None, None)
         return 0
 
 if __name__ == "__main__":

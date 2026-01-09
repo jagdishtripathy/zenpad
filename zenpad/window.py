@@ -10,6 +10,7 @@ except (ImportError, ValueError):
     markdown_preview = None
 from zenpad import diff_viewer # Diff Module
 from zenpad.preferences import PreferencesDialog, Settings
+from zenpad.session import SessionManager
 from gi.repository import GtkSource
 from gi.repository import Pango
 
@@ -102,8 +103,16 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         self.current_cursor_handler = None
         self.md_window = None
         
+        # Session Manager
+        config_dir = os.path.join(os.path.expanduser("~"), ".config", "zenpad")
+        self.session_manager = SessionManager(config_dir)
+        
         # Load Session or Add initial empty tab
-        self.load_session()
+        if self.settings.get("restore_session"):
+            if not self.session_manager.restore(self):
+                self.add_tab()  # Fallback to empty tab
+        else:
+            self.add_tab()
         
         self.show_all()
 
@@ -2237,30 +2246,13 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         for i in range(n_pages):
             editor = self.notebook.get_nth_page(i)
             if not self.check_unsaved_changes(editor):
-                return True # Cancel close
+                return True  # Cancel close
 
-        # 2. Save Session Data
-        session_data = {
-            "window_size": self.get_size(),
-            "files": []
-        }
-        
-        for i in range(n_pages):
-             editor = self.notebook.get_nth_page(i)
-             if editor.file_path:
-                 session_data["files"].append(editor.file_path)
-                 
-        try:
-            config_dir = os.path.join(os.path.expanduser("~"), ".config", "zenpad")
-            if not os.path.exists(config_dir):
-                os.makedirs(config_dir)
+        # 2. Save Session using SessionManager
+        if self.settings.get("restore_session"):
+            self.session_manager.save(self)
             
-            with open(os.path.join(config_dir, "session.json"), "w") as f:
-                json.dump(session_data, f)
-        except Exception as e:
-            print(f"Error saving session: {e}")
-            
-        return False # Allow closing
+        return False  # Allow closing
 
     def load_session(self):
         config_path = os.path.join(os.path.expanduser("~"), ".config", "zenpad", "session.json")
