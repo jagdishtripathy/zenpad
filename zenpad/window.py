@@ -2284,7 +2284,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         about.set_version("1.2.0")
         about.set_copyright("Copyright © 2025 - Zenpad Developers")
         about.set_comments("Zenpad is a modern, lightweight, and efficient text editor for Linux.\nDesigned for speed and simplicity.\n\n")
-        about.set_website("https://jagdishtripathy.github.io/zenpad-web/#/")
+        about.set_website("https://zenpad-dev.github.io")
         # about.set_website_label("Website") # Show full URL as requested
         
         about.set_authors(["Zenpad Developer Team"])
