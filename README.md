@@ -39,21 +39,34 @@ Zenpad requires a standard GNOME/GTK environment.
 
 ## Installation
 
-### Debian / Ubuntu
+### APT Repository (Recommended)
 
-The recommended way to install Zenpad is via the pre-built Debian package.
+Install Zenpad from our official APT repository:
 
-1.  **Download** the latest release (`.deb`).
-2.  **Install** via command line:
+```bash
+# Add GPG key
+curl -fsSL https://zenpad-dev.github.io/apt/zenpad.gpg | sudo gpg --dearmor -o /usr/share/keyrings/zenpad.gpg
 
-    ```bash
-    sudo dpkg -i zenpad_1.3.0_all.deb
-    sudo apt-get install -f
-    ```
+# Add repository
+echo "deb [signed-by=/usr/share/keyrings/zenpad.gpg] https://zenpad-dev.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/zenpad.list
+
+# Install
+sudo apt update
+sudo apt install zenpad
+```
+
+**Updates:** `sudo apt update && sudo apt upgrade zenpad`
+
+### Manual Installation (Debian / Ubuntu)
+
+Download the latest `.deb` from [Releases](https://github.com/jagdishtripathy/zenpad/releases):
+
+```bash
+sudo dpkg -i zenpad_1.3.0_all.deb
+sudo apt-get install -f
+```
 
 ### Source Installation
-
-To run Zenpad directly from the source code:
 
 ```bash
 pip install .
