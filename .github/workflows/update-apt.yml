@@ -1,0 +1,61 @@
+name: Update APT Repository
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-apt-repo:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout zenpad source
+        uses: actions/checkout@v4
+        
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev debhelper dh-python python3-all apt-utils gnupg
+          
+      - name: Build Debian package
+        run: |
+          dpkg-buildpackage -b -us -uc
+          mv ../zenpad_*.deb ./
+          
+      - name: Checkout APT repository
+        uses: actions/checkout@v4
+        with:
+          repository: zenpad-dev/apt
+          path: apt-repo
+          token: ${{ secrets.APT_REPO_TOKEN }}
+          
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          
+      - name: Update APT repository
+        run: |
+          # Copy new .deb to pool
+          cp zenpad_*.deb apt-repo/pool/main/z/zenpad/
+          
+          # Regenerate Packages index
+          cd apt-repo
+          dpkg-scanpackages --multiversion pool > dists/stable/main/binary-amd64/Packages
+          gzip -kf dists/stable/main/binary-amd64/Packages
+          
+          # Regenerate Release file
+          cd dists/stable
+          apt-ftparchive release . > Release
+          
+          # Sign Release
+          gpg --batch --yes --pinentry-mode loopback -abs -o Release.gpg Release
+          gpg --batch --yes --pinentry-mode loopback --clearsign -o InRelease Release
+          
+      - name: Push to APT repository
+        run: |
+          cd apt-repo
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "Update to ${{ github.event.release.tag_name }}"
+          git push
