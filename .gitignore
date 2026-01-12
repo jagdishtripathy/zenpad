@@ -13,6 +13,7 @@ debian/zenpad/
 debian/*.debhelper
 debian/*.debhelper.log
 debian/*.substvars
+debian/debhelper-build-stamp
 
 # IDE
 .vscode/
