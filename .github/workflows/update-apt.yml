@@ -67,15 +67,13 @@ jobs:
           
           # Regenerate Release file with proper metadata
           cd dists/stable
-          cat > Release << 'EOF'
-          Origin: Zenpad
-          Label: Zenpad APT Repository
-          Suite: stable
-          Codename: stable
-          Architectures: amd64 arm64 armhf all
-          Components: main
-          Description: Official Zenpad APT Repository
-          EOF
+          echo "Origin: Zenpad" > Release
+          echo "Label: Zenpad APT Repository" >> Release
+          echo "Suite: stable" >> Release
+          echo "Codename: stable" >> Release
+          echo "Architectures: amd64 arm64 armhf all" >> Release
+          echo "Components: main" >> Release
+          echo "Description: Official Zenpad APT Repository" >> Release
           apt-ftparchive release . >> Release
           
           # Sign Release
