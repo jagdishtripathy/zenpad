@@ -1,24 +1,24 @@
-# Python
+# Build artifacts
+*.egg-info/
+build/
+dist/
+.pybuild/
+*.pyc
 __pycache__/
-*.py[cod]
-*$py.class
 
-# Environments
-venv/
-env/
-.venv/
+# Debian build artifacts
+debian/files
+debian/.debhelper/
+debian/zenpad/
+debian/*.debhelper
+debian/*.debhelper.log
+debian/*.substvars
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Project
-dist/
-build/
-*.egg-info/
-
-# Build
-.log
-.deb
+# Local config
+*.local
