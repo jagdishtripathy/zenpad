@@ -1,6 +1,6 @@
 # Zenpad
 
-![Version 1.3.0](https://img.shields.io/badge/version-1.3.0-blue.svg)
+![Version 1.4.0](https://img.shields.io/badge/version-1.4.0-blue.svg)
 ![License GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-green.svg)
 ![Platform Linux](https://img.shields.io/badge/platform-linux-lightgrey.svg)
 

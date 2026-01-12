@@ -47,7 +47,7 @@ class ZenpadApplication(Gtk.Application):
             return 0
             
         if parsed_args.version:
-            print("Zenpad v1.3.0")
+            print("Zenpad v1.4.0")
             return 0
             
         if parsed_args.list_encodings:

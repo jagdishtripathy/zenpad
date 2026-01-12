@@ -1,3 +1,11 @@
+zenpad (1.4.0) unstable; urgency=medium
+
+  * New Feature: 6 custom color themes (Dracula, One Dark, Monokai, Nord, Gruvbox Dark, Tokyo Night)
+  * Fix: Session restore no longer asks for discarded content (#50)
+  * Improvement: Bundled themes automatically appear in View menu
+
+ -- Jagadish Tripathy <jagadishtripathyforyou@gmail.com>  Sun, 12 Jan 2026 16:45:00 +0530
+
 zenpad (1.3.0) unstable; urgency=medium
 
   * New Feature: Session Restoration with crash recovery
