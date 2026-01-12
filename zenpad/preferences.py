@@ -11,6 +11,11 @@ DEFAULT_SETTINGS = {
     "word_wrap": True,
     "show_line_numbers": True,
     "highlight_current_line": False,
+    "show_right_margin": False,
+    "right_margin_column": 80,
+    "highlight_matching_brackets": True,
+    "show_whitespace": False,
+    "smart_backspace": True,
     
     # Indentation
     "tab_width": 4,
@@ -128,6 +133,42 @@ class PreferencesDialog(Gtk.Dialog):
         hl_chk.set_active(self.settings.get("highlight_current_line"))
         hl_chk.connect("toggled", self.on_toggle, "highlight_current_line")
         grid.attach(hl_chk, 0, row, 2, 1)
+        row += 1
+        
+        # Show Right Margin
+        margin_chk = Gtk.CheckButton(label="Show Right Margin")
+        margin_chk.set_active(self.settings.get("show_right_margin"))
+        margin_chk.connect("toggled", self.on_toggle, "show_right_margin")
+        grid.attach(margin_chk, 0, row, 1, 1)
+        
+        # Right Margin Column
+        margin_combo = Gtk.ComboBoxText()
+        for col in ["80", "100", "120"]:
+            margin_combo.append(col, col)
+        margin_combo.set_active_id(str(self.settings.get("right_margin_column")))
+        margin_combo.connect("changed", self.on_combo_changed, "right_margin_column")
+        grid.attach(margin_combo, 1, row, 1, 1)
+        row += 1
+        
+        # Highlight Matching Brackets
+        bracket_chk = Gtk.CheckButton(label="Highlight Matching Brackets")
+        bracket_chk.set_active(self.settings.get("highlight_matching_brackets"))
+        bracket_chk.connect("toggled", self.on_toggle, "highlight_matching_brackets")
+        grid.attach(bracket_chk, 0, row, 2, 1)
+        row += 1
+        
+        # Show Whitespace
+        ws_chk = Gtk.CheckButton(label="Show Whitespace (Spaces & Tabs)")
+        ws_chk.set_active(self.settings.get("show_whitespace"))
+        ws_chk.connect("toggled", self.on_toggle, "show_whitespace")
+        grid.attach(ws_chk, 0, row, 2, 1)
+        row += 1
+        
+        # Smart Backspace
+        smart_chk = Gtk.CheckButton(label="Smart Backspace")
+        smart_chk.set_active(self.settings.get("smart_backspace"))
+        smart_chk.connect("toggled", self.on_toggle, "smart_backspace")
+        grid.attach(smart_chk, 0, row, 2, 1)
         row += 1
         
         return grid

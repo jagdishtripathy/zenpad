@@ -1746,6 +1746,17 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         margin = pad_map.get(self.settings.get("editor_padding"), 6)
         editor.view.set_left_margin(margin)
         editor.view.set_right_margin(margin)
+        
+        # Apply new editor settings
+        editor.view.set_show_right_margin(self.settings.get("show_right_margin"))
+        editor.view.set_right_margin_position(self.settings.get("right_margin_column"))
+        editor.buffer.set_highlight_matching_brackets(self.settings.get("highlight_matching_brackets"))
+        # Show whitespace using SpaceDrawer (GtkSourceView 4 API)
+        space_drawer = editor.view.get_space_drawer()
+        space_drawer.set_enable_matrix(self.settings.get("show_whitespace"))
+        if self.settings.get("show_whitespace"):
+            space_drawer.set_types_for_locations(GtkSource.SpaceLocationFlags.ALL, GtkSource.SpaceTypeFlags.ALL)
+        editor.view.set_smart_backspace(self.settings.get("smart_backspace"))
 
         # Reset modified flag (ensure opening file/new tab is clean)
         editor.buffer.set_modified(False)
@@ -2240,6 +2251,19 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                 margin = pad_map.get(value, 6)
                 view.set_left_margin(margin)
                 view.set_right_margin(margin)
+            elif key == "show_right_margin":
+                view.set_show_right_margin(value)
+            elif key == "right_margin_column":
+                view.set_right_margin_position(int(value))
+            elif key == "highlight_matching_brackets":
+                editor.buffer.set_highlight_matching_brackets(value)
+            elif key == "show_whitespace":
+                space_drawer = view.get_space_drawer()
+                space_drawer.set_enable_matrix(value)
+                if value:
+                    space_drawer.set_types_for_locations(GtkSource.SpaceLocationFlags.ALL, GtkSource.SpaceTypeFlags.ALL)
+            elif key == "smart_backspace":
+                view.set_smart_backspace(value)
 
         # Also store these settings to persistence if needed (not implemented yet)
 
