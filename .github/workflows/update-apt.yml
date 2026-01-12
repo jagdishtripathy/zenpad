@@ -15,7 +15,9 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential dpkg-dev debhelper dh-python python3-all apt-utils gnupg
+          sudo apt-get install -y devscripts equivs dpkg-dev apt-utils gnupg
+          # Use mk-build-deps to install all dependencies from debian/control
+          sudo mk-build-deps --install --remove --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
           
       - name: Build Debian package
         run: |
