@@ -1,3 +1,10 @@
+zenpad (1.4.1) unstable; urgency=medium
+
+  * Fix APT repository metadata (Origin, Suite, Codename fields)
+  * Fix CI/CD workflow permissions for release uploads
+
+ -- Jagadish Tripathy <jagadishtripathyforyou@gmail.com>  Sun, 12 Jan 2026 20:01:00 +0530
+
 zenpad (1.4.0) unstable; urgency=medium
 
   * New Feature: 6 custom color themes (Dracula, One Dark, Monokai, Nord, Gruvbox Dark, Tokyo Night)
