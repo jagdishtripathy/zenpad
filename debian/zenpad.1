@@ -1,0 +1,182 @@
+.TH ZENPAD 1 "January 2026" "Zenpad 1.4.1" "User Commands"
+.SH NAME
+zenpad \- modern, lightweight text editor for Linux
+.SH SYNOPSIS
+.B zenpad
+[\fIOPTIONS\fR] [\fIFILE\fR]...
+.SH DESCRIPTION
+.B Zenpad
+is a modern, GTK-based text editor designed for efficiency and aesthetics.
+It features syntax highlighting, multiple tabs, session restoration, and
+tools designed for security professionals and Linux power users.
+.PP
+Zenpad supports over 100 programming languages with syntax highlighting,
+Markdown preview, diff comparison, and analysis tools including hex viewer,
+hash calculator, and various encoders/decoders.
+.SH OPTIONS
+.TP
+\fB\-\-version\fR
+Display version information and exit.
+.TP
+\fB\-\-help\fR
+Display help message and exit.
+.TP
+\fB\-\-new\-window\fR
+Open a new Zenpad window.
+.TP
+\fB\-\-preferences\fR
+Open the preferences dialog.
+.TP
+\fB\-\-list\-encodings\fR
+List all available file encodings.
+.SH FEATURES
+.SS Editor Features
+.IP \(bu 2
+Syntax highlighting for 100+ languages
+.IP \(bu 2
+Multiple tabs with drag-and-drop reordering
+.IP \(bu 2
+Line numbers and current line highlighting
+.IP \(bu 2
+Word wrap and auto-indentation
+.IP \(bu 2
+Find and replace with regex support
+.IP \(bu 2
+Go to line (Ctrl+G)
+.IP \(bu 2
+Bracket matching
+.IP \(bu 2
+Right margin indicator
+.IP \(bu 2
+Whitespace visualization
+.SS Session Management
+.IP \(bu 2
+Automatic session restoration on crash
+.IP \(bu 2
+Restore last opened files on startup
+.IP \(bu 2
+Recent files menu
+.SS Analysis Tools (Tools Menu)
+.IP \(bu 2
+\fBHex Viewer\fR \- View file in hexadecimal format
+.IP \(bu 2
+\fBHash Calculator\fR \- MD5, SHA1, SHA256, SHA512
+.IP \(bu 2
+\fBBase64 Encode/Decode\fR
+.IP \(bu 2
+\fBURL Encode/Decode\fR
+.IP \(bu 2
+\fBHTML Encode/Decode\fR
+.IP \(bu 2
+\fBLog to JSON\fR \- Convert log files to JSON format
+.SS View Features
+.IP \(bu 2
+\fBMarkdown Preview\fR \- Live preview of Markdown files
+.IP \(bu 2
+\fBDiff Tool\fR \- Compare two tabs side by side
+.IP \(bu 2
+\fBColor Schemes\fR \- Dracula, One Dark, Monokai, Nord, Gruvbox, Tokyo Night
+.SH KEYBOARD SHORTCUTS
+.SS File Operations
+.TP
+\fBCtrl+N\fR
+New tab
+.TP
+\fBCtrl+O\fR
+Open file
+.TP
+\fBCtrl+S\fR
+Save file
+.TP
+\fBCtrl+Shift+S\fR
+Save as
+.TP
+\fBCtrl+W\fR
+Close tab
+.TP
+\fBCtrl+Q\fR
+Quit
+.SS Edit Operations
+.TP
+\fBCtrl+Z\fR
+Undo
+.TP
+\fBCtrl+Y\fR
+Redo
+.TP
+\fBCtrl+X\fR
+Cut
+.TP
+\fBCtrl+C\fR
+Copy
+.TP
+\fBCtrl+V\fR
+Paste
+.TP
+\fBCtrl+A\fR
+Select all
+.TP
+\fBCtrl+D\fR
+Duplicate line
+.TP
+\fBCtrl+Shift+K\fR
+Delete line
+.SS Search
+.TP
+\fBCtrl+F\fR
+Find
+.TP
+\fBCtrl+H\fR
+Find and replace
+.TP
+\fBCtrl+G\fR
+Go to line
+.SS View
+.TP
+\fBCtrl+Plus\fR
+Zoom in
+.TP
+\fBCtrl+Minus\fR
+Zoom out
+.TP
+\fBCtrl+0\fR
+Reset zoom
+.TP
+\fBF11\fR
+Toggle fullscreen
+.SS Tools
+.TP
+\fBCtrl+Shift+M\fR
+Markdown preview
+.TP
+\fBCtrl+Shift+D\fR
+Diff tool
+.TP
+\fBCtrl+Shift+E\fR
+Log to JSON
+.SH FILES
+.TP
+\fB~/.config/zenpad/settings.json\fR
+User preferences and settings.
+.TP
+\fB~/.config/zenpad/session.json\fR
+Session data for crash recovery.
+.SH ENVIRONMENT
+.TP
+\fBDISPLAY\fR
+X11 display for GUI rendering.
+.SH BUGS
+Report bugs at: https://github.com/jagdishtripathy/zenpad/issues
+.SH AUTHOR
+Jagadish Tripathy <jagadishtripathyforyou@gmail.com>
+.SH SEE ALSO
+.BR gedit (1),
+.BR kate (1),
+.BR nano (1),
+.BR vim (1)
+.SH COPYRIGHT
+Copyright \(co 2025-2026 Zenpad Developers.
+License: GPL-2.0
+.PP
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
