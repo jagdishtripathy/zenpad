@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Zenpad
+Comment=A lightweight text editor
+Exec=zenpad %F
+Icon=text-editor
+Terminal=false
+Type=Application
+Categories=Utility;TextEditor;GTK;
+MimeType=text/plain;
+Keywords=Text;Editor;
+StartupNotify=true

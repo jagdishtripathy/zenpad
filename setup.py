@@ -6,6 +6,10 @@ setup(
     description="A modern, lightweight text editor with features for coding and general use.",
     author="Zenpad Team",
     packages=find_packages(),
+    include_package_data=True,
+    package_data={
+        "zenpad": ["themes/*.xml"],
+    },
     entry_points={
         "console_scripts": [
             "zenpad=zenpad.main:main",

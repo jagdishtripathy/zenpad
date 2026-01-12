@@ -1,0 +1,17 @@
+a374d54112b303ce57576258ee715a80  usr/bin/zenpad
+7b447855cf6d913c0e69b3be49370003  usr/lib/python3/dist-packages/zenpad-1.4.0.egg-info/PKG-INFO
+68b329da9893e34099c7d8ad5cb9c940  usr/lib/python3/dist-packages/zenpad-1.4.0.egg-info/dependency_links.txt
+aaa4bd26340e8a0f1e54b515af905b89  usr/lib/python3/dist-packages/zenpad-1.4.0.egg-info/entry_points.txt
+d41d8cd98f00b204e9800998ecf8427e  usr/lib/python3/dist-packages/zenpad-1.4.0.egg-info/requires.txt
+2cc3c60ebdf9489e8e74d12a3262f297  usr/lib/python3/dist-packages/zenpad-1.4.0.egg-info/top_level.txt
+d41d8cd98f00b204e9800998ecf8427e  usr/lib/python3/dist-packages/zenpad/__init__.py
+b721bcd9b909369698d5c07f59a685e6  usr/lib/python3/dist-packages/zenpad/analysis.py
+8d80e34b8e3f5ce95fae733771b24011  usr/lib/python3/dist-packages/zenpad/diff_viewer.py
+28f9167fe9da2b7cce4630e19af7aa5f  usr/lib/python3/dist-packages/zenpad/editor.py
+e897d13651d16b106b7f310294120219  usr/lib/python3/dist-packages/zenpad/main.py
+8ad661d483c728f325b11bd3f5c1ef91  usr/lib/python3/dist-packages/zenpad/markdown_preview.py
+25da45cb05db1c26ae1a72b12a873254  usr/lib/python3/dist-packages/zenpad/preferences.py
+252d56c29503f5fde7fb70981cdacf42  usr/lib/python3/dist-packages/zenpad/session.py
+5ea63e720c5c4daf0a0e3dcc33d908bb  usr/lib/python3/dist-packages/zenpad/window.py
+66245ed23c4793feca6fe8cb4cb6e4fc  usr/share/applications/zenpad.desktop
+79b52d48d742fa451f44c7590b30dc9d  usr/share/doc/zenpad/changelog.gz
