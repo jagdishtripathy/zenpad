@@ -50,19 +50,29 @@ jobs:
           # Copy new .deb to pool
           cp zenpad_*.deb apt-repo/pool/main/z/zenpad/
           
-          # Regenerate Packages index
           cd apt-repo
-          dpkg-scanpackages --multiversion pool > dists/stable/main/binary-amd64/Packages
-          gzip -kf dists/stable/main/binary-amd64/Packages
+          
+          # Create architecture directories if they don't exist
+          mkdir -p dists/stable/main/binary-amd64
+          mkdir -p dists/stable/main/binary-arm64
+          mkdir -p dists/stable/main/binary-armhf
+          mkdir -p dists/stable/main/binary-all
+          
+          # Generate Packages index for each architecture
+          # Since zenpad is Architecture: all, it appears in all arch indexes
+          for arch in amd64 arm64 armhf all; do
+            dpkg-scanpackages --multiversion --arch all pool > dists/stable/main/binary-${arch}/Packages
+            gzip -kf dists/stable/main/binary-${arch}/Packages
+          done
           
           # Regenerate Release file with proper metadata
           cd dists/stable
-          cat > Release << EOF
+          cat > Release << 'EOF'
           Origin: Zenpad
           Label: Zenpad APT Repository
           Suite: stable
           Codename: stable
-          Architectures: amd64
+          Architectures: amd64 arm64 armhf all
           Components: main
           Description: Official Zenpad APT Repository
           EOF
