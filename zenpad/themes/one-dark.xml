@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  One Dark Color Scheme for GtkSourceView
+  Based on Atom's One Dark theme
+  License: MIT
+-->
+<style-scheme id="one-dark" name="One Dark" version="1.0">
+  <author>Zenpad Team</author>
+  <description>Atom's One Dark theme for syntax highlighting</description>
+
+  <!-- Palette -->
+  <color name="background"      value="#282C34"/>
+  <color name="current_line"    value="#2C323C"/>
+  <color name="foreground"      value="#ABB2BF"/>
+  <color name="comment"         value="#5C6370"/>
+  <color name="cyan"            value="#56B6C2"/>
+  <color name="blue"            value="#61AFEF"/>
+  <color name="purple"          value="#C678DD"/>
+  <color name="green"           value="#98C379"/>
+  <color name="red"             value="#E06C75"/>
+  <color name="orange"          value="#D19A66"/>
+  <color name="yellow"          value="#E5C07B"/>
+  <color name="selection"       value="#3E4451"/>
+  <color name="gutter"          value="#4B5263"/>
+
+  <!-- Global Styles -->
+  <style name="text"                        foreground="foreground" background="background"/>
+  <style name="cursor"                      foreground="foreground"/>
+  <style name="current-line"                background="current_line"/>
+  <style name="line-numbers"                foreground="gutter" background="background"/>
+  <style name="current-line-number"         foreground="foreground" background="current_line"/>
+  <style name="selection"                   background="selection"/>
+  <style name="bracket-match"               foreground="cyan" bold="true"/>
+  <style name="bracket-mismatch"            foreground="red" background="background" bold="true"/>
+  <style name="search-match"                foreground="background" background="yellow"/>
+  <style name="draw-spaces"                 foreground="comment"/>
+  <style name="right-margin"                foreground="gutter" background="current_line"/>
+
+  <!-- Comments -->
+  <style name="def:comment"                 foreground="comment" italic="true"/>
+  <style name="def:shebang"                 foreground="comment"/>
+  <style name="def:doc-comment"             foreground="comment"/>
+  <style name="def:doc-comment-element"     foreground="comment"/>
+
+  <!-- Constants -->
+  <style name="def:constant"                foreground="orange"/>
+  <style name="def:string"                  foreground="green"/>
+  <style name="def:special-char"            foreground="cyan"/>
+  <style name="def:special-constant"        foreground="orange"/>
+  <style name="def:number"                  foreground="orange"/>
+  <style name="def:floating-point"          foreground="orange"/>
+  <style name="def:boolean"                 foreground="orange"/>
+  <style name="def:character"               foreground="green"/>
+
+  <!-- Identifiers -->
+  <style name="def:identifier"              foreground="foreground"/>
+  <style name="def:function"                foreground="blue"/>
+  <style name="def:class"                   foreground="yellow"/>
+  <style name="def:builtin"                 foreground="cyan"/>
+
+  <!-- Statements -->
+  <style name="def:statement"               foreground="purple"/>
+  <style name="def:operator"                foreground="foreground"/>
+  <style name="def:keyword"                 foreground="purple"/>
+
+  <!-- Types -->
+  <style name="def:type"                    foreground="cyan"/>
+
+  <!-- Preprocessor -->
+  <style name="def:preprocessor"            foreground="purple"/>
+  <style name="def:included-file"           foreground="green"/>
+
+  <!-- Errors and Warnings -->
+  <style name="def:error"                   foreground="red" bold="true"/>
+  <style name="def:warning"                 foreground="orange"/>
+  <style name="def:note"                    foreground="cyan"/>
+  <style name="def:underlined"              foreground="blue" underline="single"/>
+
+  <!-- Language-specific -->
+  <style name="c:preprocessor"              foreground="purple"/>
+  <style name="python:builtin-object"       foreground="cyan"/>
+  <style name="python:module-handler"       foreground="purple"/>
+  <style name="xml:element-name"            foreground="red"/>
+  <style name="xml:attribute-name"          foreground="orange"/>
+  <style name="json:keyname"                foreground="red"/>
+  <style name="css:property-name"           foreground="cyan"/>
+  <style name="css:selector"                foreground="red"/>
+  <style name="html:tag"                    foreground="red"/>
+  <style name="html:attrib-name"            foreground="orange"/>
+  <style name="js:function"                 foreground="blue"/>
+  <style name="sh:variable"                 foreground="red"/>
+
+</style-scheme>

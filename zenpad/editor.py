@@ -1,4 +1,5 @@
 import gi
+import os
 import hashlib
 gi.require_version('Gtk', '3.0')
 try:
@@ -7,6 +8,12 @@ except ValueError:
     gi.require_version('GtkSource', '3.0')
 from gi.repository import Gtk, GtkSource, Pango, Gdk
 from zenpad import analysis
+
+# Register custom themes directory
+_themes_dir = os.path.join(os.path.dirname(__file__), "themes")
+if os.path.isdir(_themes_dir):
+    _scheme_manager = GtkSource.StyleSchemeManager.get_default()
+    _scheme_manager.prepend_search_path(_themes_dir)
 
 class EditorTab(Gtk.ScrolledWindow):
     def __init__(self, search_settings=None):

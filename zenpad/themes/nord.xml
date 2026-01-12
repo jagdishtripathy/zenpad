@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Nord Color Scheme for GtkSourceView
+  Based on https://www.nordtheme.com/
+  License: MIT
+-->
+<style-scheme id="nord" name="Nord" version="1.0">
+  <author>Zenpad Team</author>
+  <description>An arctic, north-bluish color palette</description>
+
+  <!-- Palette - Nord Colors -->
+  <color name="nord0"           value="#2E3440"/>
+  <color name="nord1"           value="#3B4252"/>
+  <color name="nord2"           value="#434C5E"/>
+  <color name="nord3"           value="#4C566A"/>
+  <color name="nord4"           value="#D8DEE9"/>
+  <color name="nord5"           value="#E5E9F0"/>
+  <color name="nord6"           value="#ECEFF4"/>
+  <color name="nord7"           value="#8FBCBB"/>
+  <color name="nord8"           value="#88C0D0"/>
+  <color name="nord9"           value="#81A1C1"/>
+  <color name="nord10"          value="#5E81AC"/>
+  <color name="nord11"          value="#BF616A"/>
+  <color name="nord12"          value="#D08770"/>
+  <color name="nord13"          value="#EBCB8B"/>
+  <color name="nord14"          value="#A3BE8C"/>
+  <color name="nord15"          value="#B48EAD"/>
+
+  <!-- Global Styles -->
+  <style name="text"                        foreground="nord4" background="nord0"/>
+  <style name="cursor"                      foreground="nord4"/>
+  <style name="current-line"                background="nord1"/>
+  <style name="line-numbers"                foreground="nord3" background="nord0"/>
+  <style name="current-line-number"         foreground="nord4" background="nord1"/>
+  <style name="selection"                   background="nord2"/>
+  <style name="bracket-match"               foreground="nord8" bold="true"/>
+  <style name="bracket-mismatch"            foreground="nord11" background="nord0" bold="true"/>
+  <style name="search-match"                foreground="nord0" background="nord13"/>
+  <style name="draw-spaces"                 foreground="nord3"/>
+  <style name="right-margin"                foreground="nord3" background="nord1"/>
+
+  <!-- Comments -->
+  <style name="def:comment"                 foreground="nord3" italic="true"/>
+  <style name="def:shebang"                 foreground="nord3"/>
+  <style name="def:doc-comment"             foreground="nord3"/>
+  <style name="def:doc-comment-element"     foreground="nord3"/>
+
+  <!-- Constants -->
+  <style name="def:constant"                foreground="nord15"/>
+  <style name="def:string"                  foreground="nord14"/>
+  <style name="def:special-char"            foreground="nord13"/>
+  <style name="def:special-constant"        foreground="nord15"/>
+  <style name="def:number"                  foreground="nord15"/>
+  <style name="def:floating-point"          foreground="nord15"/>
+  <style name="def:boolean"                 foreground="nord9"/>
+  <style name="def:character"               foreground="nord14"/>
+
+  <!-- Identifiers -->
+  <style name="def:identifier"              foreground="nord4"/>
+  <style name="def:function"                foreground="nord8"/>
+  <style name="def:class"                   foreground="nord7"/>
+  <style name="def:builtin"                 foreground="nord9"/>
+
+  <!-- Statements -->
+  <style name="def:statement"               foreground="nord9"/>
+  <style name="def:operator"                foreground="nord9"/>
+  <style name="def:keyword"                 foreground="nord9"/>
+
+  <!-- Types -->
+  <style name="def:type"                    foreground="nord7"/>
+
+  <!-- Preprocessor -->
+  <style name="def:preprocessor"            foreground="nord10"/>
+  <style name="def:included-file"           foreground="nord14"/>
+
+  <!-- Errors and Warnings -->
+  <style name="def:error"                   foreground="nord11" bold="true"/>
+  <style name="def:warning"                 foreground="nord12"/>
+  <style name="def:note"                    foreground="nord8"/>
+  <style name="def:underlined"              foreground="nord8" underline="single"/>
+
+  <!-- Language-specific -->
+  <style name="c:preprocessor"              foreground="nord10"/>
+  <style name="python:builtin-object"       foreground="nord9"/>
+  <style name="python:module-handler"       foreground="nord9"/>
+  <style name="xml:element-name"            foreground="nord9"/>
+  <style name="xml:attribute-name"          foreground="nord8"/>
+  <style name="json:keyname"                foreground="nord8"/>
+  <style name="css:property-name"           foreground="nord8"/>
+  <style name="css:selector"                foreground="nord7"/>
+  <style name="html:tag"                    foreground="nord9"/>
+  <style name="html:attrib-name"            foreground="nord8"/>
+  <style name="js:function"                 foreground="nord8"/>
+  <style name="sh:variable"                 foreground="nord4"/>
+
+</style-scheme>

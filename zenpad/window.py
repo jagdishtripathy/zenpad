@@ -2120,6 +2120,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                     return False # Save failed or cancelled
                 return True
             elif response == Gtk.ResponseType.REJECT:
+                # User explicitly discarded changes - clear modified flag
+                # so session manager doesn't save this content
+                editor.buffer.set_modified(False)
                 return True # Close without saving
             else:
                 return False # Cancel
@@ -2250,7 +2253,21 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
         # 2. Save Session using SessionManager
         if self.settings.get("restore_session"):
-            self.session_manager.save(self)
+            # Check if there's any unsaved data worth saving
+            has_unsaved_data = False
+            for i in range(n_pages):
+                editor = self.notebook.get_nth_page(i)
+                # Only consider tabs that are still marked as modified
+                # (User might have clicked "Close without Saving" which clears modified flag)
+                if editor.buffer.get_modified():
+                    has_unsaved_data = True
+                    break
+            
+            if has_unsaved_data:
+                self.session_manager.save(self)
+            else:
+                # Clear session file - nothing to restore
+                self.session_manager.clear()
             
         return False  # Allow closing
 
