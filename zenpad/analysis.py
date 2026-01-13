@@ -345,16 +345,41 @@ def detect_language_by_content(text):
         if "ruby" in first_line: return "ruby"
         if "php" in first_line: return "php"
 
-    # 2. Strong Structure Indicators (Java, C++, Go, Python Defs, XML/HTML)
+    # 2. Strong Structure Indicators (Go, Java, C++, Python Defs, XML/HTML)
     sample = text[:1500]
+    
+    # Go (Strong) - Check BEFORE Java since both use 'package'
+    if "package main" in sample and "func " in sample: return "go"
+    if 'import "' in sample and "func " in sample: return "go"
     
     # Java (Strong)
     if "public class " in sample and "{" in sample: return "java"
     if "public static void main" in sample: return "java"
-    if "package " in sample and ";" in sample: return "java"
+    if "package " in sample and ";" in sample and "func " not in sample: return "java"
     
-    # Go (Strong)
-    if "package main" in sample and "func main" in sample: return "go"
+    # Rust (Strong) - Check before JS since both use 'fn'/'let'
+    if "fn main()" in sample and "{" in sample: return "rust"
+    if "let mut " in sample: return "rust"
+    if "println!(" in sample or "eprintln!(" in sample: return "rust"
+    if re.search(r'fn\s+\w+\s*\([^)]*\)\s*(->\s*\w+)?\s*\{', sample): return "rust"
+    
+    # Haskell (Strong)
+    if ":: IO ()" in sample: return "haskell"
+    if "= do" in sample and "let " in sample: return "haskell"
+    if "putStrLn" in sample or "getLine" in sample: return "haskell"
+    if re.search(r'^\w+\s*::\s*\w+', sample, re.MULTILINE): return "haskell"
+    
+    # Lisp/Scheme (Strong)
+    if "(defun " in sample or "(define " in sample: return "commonlisp"
+    if "(let (" in sample or "(let* (" in sample: return "commonlisp"
+    if "(format " in sample and "~" in sample: return "commonlisp"
+    if re.search(r'^\s*\(defun\s+\w+', sample, re.MULTILINE): return "commonlisp"
+    
+    # Assembly (NASM/x86)
+    if "section .data" in sample or "section .text" in sample: return "nasm"
+    if "global _start" in sample or "_start:" in sample: return "nasm"
+    if re.search(r'\bmov\s+(eax|rax|ebx|rbx|ecx|rcx|edx|rdx)', sample): return "nasm"
+    if "syscall" in sample and "mov " in sample: return "nasm"
     
     # C/C++ Includes (Strong)
     if "#include <iostream>" in sample: return "cpp"

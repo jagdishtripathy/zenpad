@@ -237,7 +237,11 @@ class EditorTab(Gtk.ScrolledWindow):
             if stripped:
                 # Group 1: BRACE/BLOCK Languages (C-like, Python, JSON, JS, AND Untitled/None)
                 # We assume generic brace behavior for Plain Text (None)
-                brace_langs = ["python", "c", "cpp", "chdr", "java", "js", "javascript", "json", "css", "rust", "go", "text"]
+                brace_langs = [
+                    "python", "c", "cpp", "chdr", "java", "js", "javascript", "json", "css",
+                    "rust", "go", "text", "haskell", "commonlisp", "scheme", "lisp",
+                    "nasm", "asm", "gas", "masm"
+                ]
                 
                 is_brace_lang = (lang_id is None) or (lang_id in brace_langs) or ("json" in lang_id) or ("python" in lang_id) or (lang_id == "text")
                 
@@ -272,6 +276,14 @@ class EditorTab(Gtk.ScrolledWindow):
                                 # XML expansion <t>|</t> ?
                                 # Complex to check char_after for </tag> without parsing.
                                 # Leaving XML expansion simple for now.
+                
+                # Group 4: Haskell (do, where, let, of)
+                if lang_id == "haskell":
+                    tokens = stripped.split()
+                    if tokens:
+                        last = tokens[-1]
+                        if last in ["do", "where", "let", "of", "->"]:
+                            should_indent = True
 
             # Construct insertion
             to_insert = "\n" + indentation
