@@ -53,11 +53,12 @@ jobs:
           cd apt-repo/pool/main/z/zenpad
           
           # Cleanup: Keep only the latest 3 .deb versions
-          # List all .deb files sorted by version (newest first), skip first 3, delete rest
-          ls -t zenpad_*.deb 2>/dev/null | tail -n +4 | xargs -r rm -f
+          # Sort by version number (not modification time) using version-sort
+          # Extract version from filename, sort numerically, keep latest 3
+          ls zenpad_*.deb 2>/dev/null | sort -V -r | tail -n +4 | xargs -r rm -f
           
-          echo "Current packages in pool:"
-          ls -la zenpad_*.deb
+          echo "Current packages in pool (sorted by version):"
+          ls zenpad_*.deb | sort -V
           
           cd $GITHUB_WORKSPACE/apt-repo
           
