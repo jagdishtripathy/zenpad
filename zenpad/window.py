@@ -108,11 +108,15 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         self.session_manager = SessionManager(config_dir)
         
         # Load Session or Add initial empty tab
-        if self.settings.get("restore_session"):
-            if not self.session_manager.restore(self):
-                self.add_tab()  # Fallback to empty tab
-        else:
-            self.add_tab()
+        # Skip if files are being opened via command line
+        has_pending_files = hasattr(self.get_application(), 'pending_files') and self.get_application().pending_files
+        
+        if not has_pending_files:
+            if self.settings.get("restore_session"):
+                if not self.session_manager.restore(self):
+                    self.add_tab()  # Fallback to empty tab
+            else:
+                self.add_tab()
         
         self.show_all()
 

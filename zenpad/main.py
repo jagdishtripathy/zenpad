@@ -60,6 +60,13 @@ class ZenpadApplication(Gtk.Application):
             self.quit()
             return 0
 
+        # Store pending files BEFORE activating window
+        # This lets the window know not to create a default empty tab
+        self.pending_files = parsed_args.files if parsed_args.files else []
+        self.pending_line = parsed_args.line
+        self.pending_column = parsed_args.column
+        self.pending_encoding = parsed_args.encoding
+        
         self.activate()
         
         # Handle Preferences
@@ -69,8 +76,8 @@ class ZenpadApplication(Gtk.Application):
                  self.window.on_preferences_clicked(None)
 
         # Open Files
-        if parsed_args.files:
-            for filename in parsed_args.files:
+        if self.pending_files:
+            for filename in self.pending_files:
                 if filename == "-":
                     try:
                         # Read from stdin stream provided by Gio
@@ -90,7 +97,10 @@ class ZenpadApplication(Gtk.Application):
                     except Exception as e:
                         print(f"Error reading stdin: {e}")
                 else:
-                    self.window.open_file_from_path(filename, line=parsed_args.line, column=parsed_args.column, encoding=parsed_args.encoding)
+                    self.window.open_file_from_path(filename, line=self.pending_line, column=self.pending_column, encoding=self.pending_encoding)
+        
+        # Clear pending files after processing
+        self.pending_files = []
 
         return 0
 
