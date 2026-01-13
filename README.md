@@ -62,7 +62,7 @@ sudo apt install zenpad
 Download the latest `.deb` from [Releases](https://github.com/jagdishtripathy/zenpad/releases):
 
 ```bash
-sudo dpkg -i zenpad_1.3.0_all.deb
+sudo dpkg -i zenpad_1.4.1_all.deb
 sudo apt-get install -f
 ```
 
