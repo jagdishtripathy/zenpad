@@ -1,3 +1,15 @@
+zenpad (1.5.0) unstable; urgency=medium
+
+  * New Feature: Tab switching shortcuts (Ctrl+Tab, Ctrl+Shift+Tab)
+  * New Feature: Editor preferences (Right Margin, Brackets, Whitespace, Smart Backspace)
+  * New Feature: Man page documentation (man zenpad)
+  * Fix: No extra Untitled tab when opening files via command line
+  * Fix: Language detection for Go, Rust, Haskell, Lisp, Assembly
+  * Fix: Indentation support for Go, Rust, Haskell, Lisp, Assembly
+  * Improvement: APT repository auto-cleanup (keeps latest 3 versions)
+
+ -- Jagadish Tripathy <jagadishtripathyforyou@gmail.com>  Mon, 13 Jan 2026 21:58:00 +0530
+
 zenpad (1.4.1) unstable; urgency=medium
 
   * Fix APT repository metadata (Origin, Suite, Codename fields)

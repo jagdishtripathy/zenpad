@@ -1,6 +1,6 @@
 # Zenpad
 
-![Version 1.4.1](https://img.shields.io/badge/version-1.4.1-blue.svg)
+![Version 1.5.0](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![License GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-green.svg)
 ![Platform Linux](https://img.shields.io/badge/platform-linux-lightgrey.svg)
 
@@ -62,7 +62,7 @@ sudo apt install zenpad
 Download the latest `.deb` from [Releases](https://github.com/jagdishtripathy/zenpad/releases):
 
 ```bash
-sudo dpkg -i zenpad_1.4.1_all.deb
+sudo dpkg -i zenpad_1.5.0_all.deb
 sudo apt-get install -f
 ```
 
