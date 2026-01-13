@@ -1485,7 +1485,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             ("url_dec", lambda *args: self.on_transform_text("url_dec")),
             ("markdown_preview", self.on_markdown_preview),
             ("compare_tabs", self.on_compare_tabs),
-            ("quick_open", self.on_quick_open_action)
+            ("quick_open", self.on_quick_open_action),
+            # Tab Navigation
+            ("next_tab", self.on_next_tab),
+            ("prev_tab", self.on_prev_tab),
         ])
 
         for name, callback in actions:
@@ -1549,11 +1552,30 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         app.set_accels_for_action("win.format_xml", ["<Primary><Shift>x"])
         app.set_accels_for_action("win.convert_json", ["<Primary><Alt>l"])
         app.set_accels_for_action("win.hex_view", ["<Primary><Shift>h"])
+        # Tab Navigation
+        app.set_accels_for_action("win.next_tab", ["<Primary>Tab", "<Primary>Page_Down"])
+        app.set_accels_for_action("win.prev_tab", ["<Primary><Shift>Tab", "<Primary>Page_Up"])
 
     def on_new_window(self, widget, param=None):
         app = self.get_application()
         win = ZenpadWindow(app)
         win.present()
+
+    def on_next_tab(self, action=None, param=None):
+        """Switch to next tab (Ctrl+Tab)"""
+        n_pages = self.notebook.get_n_pages()
+        if n_pages > 1:
+            current = self.notebook.get_current_page()
+            next_page = (current + 1) % n_pages
+            self.notebook.set_current_page(next_page)
+
+    def on_prev_tab(self, action=None, param=None):
+        """Switch to previous tab (Ctrl+Shift+Tab)"""
+        n_pages = self.notebook.get_n_pages()
+        if n_pages > 1:
+            current = self.notebook.get_current_page()
+            prev_page = (current - 1) % n_pages
+            self.notebook.set_current_page(prev_page)
 
     def on_open_recent(self, recent_chooser):
         item = recent_chooser.get_current_item()
