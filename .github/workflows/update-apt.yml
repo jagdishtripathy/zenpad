@@ -50,7 +50,16 @@ jobs:
           # Copy new .deb to pool
           cp zenpad_*.deb apt-repo/pool/main/z/zenpad/
           
-          cd apt-repo
+          cd apt-repo/pool/main/z/zenpad
+          
+          # Cleanup: Keep only the latest 3 .deb versions
+          # List all .deb files sorted by version (newest first), skip first 3, delete rest
+          ls -t zenpad_*.deb 2>/dev/null | tail -n +4 | xargs -r rm -f
+          
+          echo "Current packages in pool:"
+          ls -la zenpad_*.deb
+          
+          cd $GITHUB_WORKSPACE/apt-repo
           
           # Create architecture directories if they don't exist
           mkdir -p dists/stable/main/binary-amd64
