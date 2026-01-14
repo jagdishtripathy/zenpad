@@ -2903,8 +2903,9 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         if not lang_id: return "text-x-generic"
         
         # Map common IDs to icon names (Adwaita/Tango/Standard)
-        # Verify valid icon names on system if possible, but hardcoding safety is fine.
+        # Using mimetypes and standard freedesktop icon names
         mapping = {
+            # Common Languages
             "python": "text-x-python",
             "c": "text-x-csrc",
             "cpp": "text-x-c++src", 
@@ -2912,13 +2913,40 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             "java": "text-x-java",
             "js": "text-x-javascript",
             "javascript": "text-x-javascript",
-            "json": "application-json", # often mimetype based
+            "json": "application-json",
             "xml": "text-xml",
             "html": "text-html",
             "css": "text-css",
             "sh": "text-x-script",
             "bash": "application-x-shellscript",
-            "markdown": "text-markdown"
+            "markdown": "text-markdown",
+            # Additional Languages
+            "ruby": "application-x-ruby",
+            "go": "text-x-go",
+            "rust": "text-x-rust",
+            "haskell": "text-x-haskell",
+            "commonlisp": "text-x-lisp",
+            "scheme": "text-x-scheme",
+            "lisp": "text-x-lisp",
+            "nasm": "text-x-asm",
+            "asm": "text-x-asm",
+            "gas": "text-x-asm",
+            "php": "application-x-php",
+            "typescript": "text-x-typescript",
+            "tsx": "text-x-typescript",
+            "jsx": "text-x-javascript",
+            "sql": "text-x-sql",
+            "lua": "text-x-lua",
+            "perl": "application-x-perl",
+            "r": "text-x-r",
+            "swift": "text-x-swift",
+            "kotlin": "text-x-kotlin",
+            "scala": "text-x-scala",
+            "yaml": "text-x-yaml",
+            "toml": "text-x-toml",
+            "dockerfile": "text-x-dockerfile",
+            "makefile": "text-x-makefile",
+            "cmake": "text-x-cmake",
         }
         
         return mapping.get(lang_id, "text-x-generic")

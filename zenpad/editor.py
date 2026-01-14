@@ -382,7 +382,7 @@ class EditorTab(Gtk.ScrolledWindow):
                          buff.end_user_action()
             return False
 
-        # Auto-Pairing for Openers ( { [ ( )
+        # Auto-Pairing for Openers ( { [ )
         if keyval in [Gdk.KEY_braceleft, Gdk.KEY_bracketleft, Gdk.KEY_parenleft]:
             buff = self.buffer
             lang = buff.get_language()

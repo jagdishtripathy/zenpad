@@ -381,6 +381,14 @@ def detect_language_by_content(text):
     if re.search(r'\bmov\s+(eax|rax|ebx|rbx|ecx|rcx|edx|rdx)', sample): return "nasm"
     if "syscall" in sample and "mov " in sample: return "nasm"
     
+    # Ruby (Strong)
+    if "puts " in sample or "puts(" in sample: return "ruby"
+    if re.search(r'^def\s+\w+', sample, re.MULTILINE) and "\nend" in sample: return "ruby"
+    if re.search(r'^class\s+[A-Z]\w*', sample, re.MULTILINE) and "\nend" in sample: return "ruby"
+    if "require '" in sample or 'require "' in sample: return "ruby"
+    if "attr_accessor" in sample or "attr_reader" in sample: return "ruby"
+    if ".each do |" in sample or ".map do |" in sample: return "ruby"
+    
     # C/C++ Includes (Strong)
     if "#include <iostream>" in sample: return "cpp"
     if "#include <vector>" in sample: return "cpp"
