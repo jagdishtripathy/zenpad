@@ -823,6 +823,7 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         # Search Entry
         self.search_entry = Gtk.SearchEntry()
         self.search_entry.set_width_chars(30)
+        self.search_entry.set_size_request(200, -1)  # Fix GTK warning about negative dimensions
         self.search_entry.connect("search-changed", self.on_search_text_changed)
         self.search_entry.connect("activate", lambda w: self.on_search_next(w))
         row1.pack_start(self.search_entry, False, False, 0)
@@ -2939,6 +2940,7 @@ class QuickOpenDialog(Gtk.Dialog):
         # Search Entry
         self.search_entry = Gtk.SearchEntry()
         self.search_entry.set_placeholder_text("Type to search files...")
+        self.search_entry.set_size_request(300, -1)  # Fix GTK warning about negative dimensions
         self.search_entry.connect("search-changed", self.on_search_changed)
         self.search_entry.connect("activate", self.on_activated) # Enter key
         box.pack_start(self.search_entry, False, False, 0)
