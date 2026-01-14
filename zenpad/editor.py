@@ -60,6 +60,9 @@ class EditorTab(Gtk.ScrolledWindow):
         
         # Handle smart indentation on Enter
         self.view.connect("key-press-event", self.on_key_press)
+        
+        # Custom context menu - intercept right-click
+        self.view.connect("button-press-event", self.on_button_press)
 
         self.add(self.view)
         self.show_all()
@@ -415,3 +418,103 @@ class EditorTab(Gtk.ScrolledWindow):
                 return True
             
         return False
+    
+    def on_button_press(self, view, event):
+        """Handle right-click to show custom context menu"""
+        # Only handle right-click (button 3)
+        if event.button != 3:
+            return False
+        
+        # Get window and clipboard
+        window = view.get_toplevel()
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        
+        # Create menu
+        menu = Gtk.Menu()
+        
+        # Get action group
+        action_group = window.get_action_group("win")
+        
+        # Helper to invoke window actions (in "win" action group)
+        def invoke_action(action_name):
+            def handler(widget):
+                if action_group:
+                    action_group.activate_action(action_name, None)
+            return handler
+        
+        # Helper to create menu items with accelerator labels
+        def make_item(label, callback, accel=None):
+            item = Gtk.MenuItem()
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
+            lbl = Gtk.Label(label=label)
+            lbl.set_xalign(0)
+            box.pack_start(lbl, True, True, 0)
+            if accel:
+                accel_lbl = Gtk.Label(label=accel)
+                accel_lbl.get_style_context().add_class("dim-label")
+                box.pack_end(accel_lbl, False, False, 0)
+            item.add(box)
+            item.connect("activate", callback)
+            return item
+        
+        # Undo / Redo
+        menu.append(make_item("Undo", invoke_action("undo"), "Ctrl+Z"))
+        menu.append(make_item("Redo", invoke_action("redo"), "Ctrl+Y"))
+        menu.append(Gtk.SeparatorMenuItem())
+        
+        # Cut / Copy / Paste - Use GTK buffer methods directly
+        def do_cut(w):
+            self.buffer.cut_clipboard(clipboard, self.view.get_editable())
+        def do_copy(w):
+            self.buffer.copy_clipboard(clipboard)
+        def do_paste(w):
+            self.buffer.paste_clipboard(clipboard, None, self.view.get_editable())
+        
+        menu.append(make_item("Cut", do_cut, "Ctrl+X"))
+        menu.append(make_item("Copy", do_copy, "Ctrl+C"))
+        menu.append(make_item("Paste", do_paste, "Ctrl+V"))
+        menu.append(Gtk.SeparatorMenuItem())
+        
+        # Delete Selection
+        def delete_selection(w):
+            self.buffer.delete_selection(True, True)
+        menu.append(make_item("Delete Selection", delete_selection, "Delete"))
+        
+        # Delete Line
+        menu.append(make_item("Delete Line", invoke_action("delete_line"), "Ctrl+Shift+K"))
+        menu.append(Gtk.SeparatorMenuItem())
+        
+        # Select All
+        def select_all(w):
+            self.buffer.select_range(self.buffer.get_start_iter(), self.buffer.get_end_iter())
+        menu.append(make_item("Select All", select_all, "Ctrl+A"))
+        menu.append(Gtk.SeparatorMenuItem())
+        
+        # Convert submenu - use correct action names (toc_upper, toc_lower)
+        convert_menu = Gtk.Menu()
+        convert_item = Gtk.MenuItem(label="Convert")
+        convert_item.set_submenu(convert_menu)
+        convert_menu.append(make_item("UPPERCASE", invoke_action("toc_upper"), None))
+        convert_menu.append(make_item("lowercase", invoke_action("toc_lower"), None))
+        menu.append(convert_item)
+        
+        # Move submenu - use correct action names (move_up, move_down)
+        move_menu = Gtk.Menu()
+        move_item = Gtk.MenuItem(label="Move")
+        move_item.set_submenu(move_menu)
+        move_menu.append(make_item("Move Line Up", invoke_action("move_up"), "Alt+Up"))
+        move_menu.append(make_item("Move Line Down", invoke_action("move_down"), "Alt+Down"))
+        menu.append(move_item)
+        
+        # Duplicate - correct action name
+        menu.append(make_item("Duplicate Line / Selection", invoke_action("duplicate"), "Ctrl+Shift+D"))
+        menu.append(Gtk.SeparatorMenuItem())
+        
+        # Indent
+        menu.append(make_item("Increase Indent", invoke_action("indent"), "Tab"))
+        menu.append(make_item("Decrease Indent", invoke_action("unindent"), "Shift+Tab"))
+        
+        menu.show_all()
+        menu.popup_at_pointer(event)
+        
+        return True  # Prevent default context menu
