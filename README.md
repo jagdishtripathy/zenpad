@@ -111,4 +111,4 @@ Zenpad is open-source software licensed under the **GPL-2.0**.
 See the [LICENSE](LICENSE) file for more details.
 
 ---
-Copyright © 2025 **Team Zenpad**.
+Copyright © 2025 **Team Zenpad**
