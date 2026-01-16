@@ -577,8 +577,14 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         tab_size_menu = Gtk.Menu()
         tab_size_item.set_submenu(tab_size_menu)
         
+        group = None
         for size in [2, 4, 8]:
-             item = Gtk.RadioMenuItem(label=str(size))
+             if group is None:
+                 item = Gtk.RadioMenuItem(label=str(size))
+                 group = item
+             else:
+                 item = Gtk.RadioMenuItem(label=str(size), group=group)
+
              if size == self.doc_tab_size:
                  item.set_active(True)
              item.connect("activate", self.on_change_tab_size, size)
