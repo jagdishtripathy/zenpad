@@ -1646,16 +1646,56 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             self.show_error(f"Error reloading: {e}")
 
     def on_print(self, widget, param=None):
-        # Basic print scaffolding
-        op = Gtk.PrintOperation()
-        # op.connect("draw-page", self.draw_page_cb) 
-        # Printing is complex, implementing full draw logic is out of scope for "quick implementation"
-        # Display error/info for now
-        dlg = Gtk.MessageDialog(parent=self, modal=True, message_type=Gtk.MessageType.INFO,
-                                buttons=Gtk.ButtonsType.OK, text="Printing")
-        dlg.format_secondary_text("Printing is not fully configured in this environment.")
-        dlg.run()
-        dlg.destroy()
+        """Print the current document using GtkSourceView PrintCompositor"""
+        page_num = self.notebook.get_current_page()
+        if page_num == -1:
+            return
+        editor = self.notebook.get_nth_page(page_num)
+        
+        # Create print compositor for syntax-highlighted printing
+        compositor = GtkSource.PrintCompositor.new_from_view(editor.view)
+        
+        # Configure print settings
+        compositor.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        compositor.set_highlight_syntax(True)
+        compositor.set_print_line_numbers(5)  # Print line numbers every 5 lines
+        
+        # Set header and footer
+        file_name = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
+        compositor.set_header_format(True, None, file_name, None)
+        compositor.set_footer_format(True, None, "Page %N of %Q", None)
+        compositor.set_print_header(True)
+        compositor.set_print_footer(True)
+        
+        # Create print operation
+        print_op = Gtk.PrintOperation()
+        print_op.set_n_pages(1)  # Will be updated in begin-print
+        
+        def begin_print(operation, context):
+            # Paginate the document
+            while not compositor.paginate(context):
+                pass
+            n_pages = compositor.get_n_pages()
+            operation.set_n_pages(n_pages)
+        
+        def draw_page(operation, context, page_nr):
+            compositor.draw_page(context, page_nr)
+        
+        print_op.connect("begin-print", begin_print)
+        print_op.connect("draw-page", draw_page)
+        
+        # Run print dialog
+        result = print_op.run(Gtk.PrintOperationAction.PRINT_DIALOG, self)
+        
+        if result == Gtk.PrintOperationResult.ERROR:
+            error = print_op.get_error()
+            dlg = Gtk.MessageDialog(parent=self, modal=True, 
+                                    message_type=Gtk.MessageType.ERROR,
+                                    buttons=Gtk.ButtonsType.OK, 
+                                    text="Print Error")
+            dlg.format_secondary_text(str(error))
+            dlg.run()
+            dlg.destroy()
 
 
     def on_detach_tab(self, widget, param=None):
