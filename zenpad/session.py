@@ -48,6 +48,14 @@ class SessionManager:
             n_pages = window.notebook.get_n_pages()
             for i in range(n_pages):
                 editor = window.notebook.get_nth_page(i)
+                
+                # Skip empty untitled tabs (no file path and no content)
+                if not editor.file_path:
+                    start, end = editor.buffer.get_bounds()
+                    content = editor.buffer.get_text(start, end, True)
+                    if not content.strip():  # Empty or whitespace only
+                        continue
+                
                 tab_data = self._get_tab_data(editor)
                 session_data["tabs"].append(tab_data)
             

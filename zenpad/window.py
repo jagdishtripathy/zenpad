@@ -11,6 +11,7 @@ except (ImportError, ValueError):
 from zenpad import diff_viewer # Diff Module
 from zenpad.preferences import PreferencesDialog, Settings
 from zenpad.session import SessionManager
+from zenpad import file_utils  # Binary detection and encoding
 from gi.repository import GtkSource
 from gi.repository import Pango
 
@@ -614,6 +615,39 @@ class ZenpadWindow(Gtk.ApplicationWindow):
              item.connect("activate", self.on_change_line_ending, le)
              le_menu.append(item)
         doc_menu.append(le_item)
+        
+        # Encoding Submenu
+        enc_item = Gtk.MenuItem(label="Encoding")
+        enc_menu = Gtk.Menu()
+        enc_item.set_submenu(enc_menu)
+        
+        self.encoding_items = {}  # Store radio items for updating
+        encodings = [
+            ("UTF-8", "UTF-8 (Default)"),
+            ("ISO-8859-1", "ISO-8859-1 (Latin-1)"),
+            ("ISO-8859-15", "ISO-8859-15 (Latin-9)"),
+            ("Windows-1252", "Windows-1252 (Western)"),
+            ("UTF-16", "UTF-16"),
+            ("ASCII", "ASCII"),
+        ]
+        group = None
+        self._updating_encoding_radio = True  # Block handler during creation
+        for enc, label in encodings:
+            if group is None:
+                item = Gtk.RadioMenuItem(label=label)
+                group = item
+            else:
+                item = Gtk.RadioMenuItem(label=label, group=group)
+            item.connect("activate", self.on_change_encoding, enc)
+            enc_menu.append(item)
+            self.encoding_items[enc] = item
+        # Set UTF-8 as default after all items created
+        self.encoding_items["UTF-8"].set_active(True)
+        self._updating_encoding_radio = False
+        
+        # Update radio selection when menu is shown
+        enc_menu.connect("show", self.on_encoding_menu_show)
+        doc_menu.append(enc_item)
         
         # Unicode BOM
         self.bom_chk = Gtk.CheckMenuItem(label="Write Unicode BOM")
@@ -1227,6 +1261,62 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         self.doc_line_ending = le
         # In reality, this would require converting buffer text
         pass
+    def on_encoding_menu_show(self, menu):
+        """Update encoding radio selection when menu is shown"""
+        page_num = self.notebook.get_current_page()
+        if page_num == -1:
+            return
+        editor = self.notebook.get_nth_page(page_num)
+        enc = getattr(editor, 'file_encoding', 'UTF-8')
+        
+        self._updating_encoding_radio = True
+        if enc in self.encoding_items:
+            self.encoding_items[enc].set_active(True)
+        else:
+            # Default to UTF-8 if encoding not in list
+            self.encoding_items["UTF-8"].set_active(True)
+        self._updating_encoding_radio = False
+
+    def on_change_encoding(self, widget, encoding):
+        """Change encoding and reload file with new encoding"""
+        # Skip if we're just updating the radio during tab switch
+        if getattr(self, '_updating_encoding_radio', False):
+            return
+            
+        # Only act if this radio item is now active (ignore deactivation events)
+        if not widget.get_active():
+            return
+            
+        page_num = self.notebook.get_current_page()
+        if page_num == -1:
+            return
+        editor = self.notebook.get_nth_page(page_num)
+        
+        # Skip if encoding is already the same
+        current_enc = getattr(editor, 'file_encoding', 'UTF-8')
+        if current_enc == encoding:
+            return
+        
+        # Update encoding
+        editor.file_encoding = encoding
+        
+        # If file exists, re-read with new encoding
+        if editor.file_path and os.path.exists(editor.file_path):
+            try:
+                with open(editor.file_path, "r", encoding=encoding) as f:
+                    content = f.read()
+                
+                # Update buffer with new content
+                editor.buffer.begin_user_action()
+                editor.buffer.set_text(content)
+                editor.buffer.end_user_action()
+                
+                # Update hash for modified tracking
+                editor.last_buffer = hashlib.md5(content.encode(encoding)).hexdigest()
+                editor.buffer.set_modified(False)
+                
+            except Exception as e:
+                self.show_error(f"Could not re-read file with {encoding} encoding: {e}")
 
     def on_toggle_bom(self, widget):
         self.doc_write_bom = widget.get_active()
@@ -2034,26 +2124,78 @@ class ZenpadWindow(Gtk.ApplicationWindow):
 
              # Create new tab with this filename/path, ready to save
              self.add_tab("", os.path.basename(file_path), os.path.abspath(file_path))
-             # But add_tab (with my recent fix) sets modified=False.
-             # Let's set modified=True explicitly if we created it from scratch?
-             # No, if I open "foo.txt" and it's empty, and I don't type anything, and close, it shouldn't prompt.
-             # If I type, it becomes modified. That's fine.
              return
 
-        try:
-            # If encoding specified, try it strictly?
-            if encoding:
-                 with open(file_path, "r", encoding=encoding) as f:
-                     content = f.read()
-            else:
-                # Try UTF-8 first
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
+        # Check if file is binary
+        is_binary = file_utils.is_binary_file(file_path)
+        
+        if is_binary:
+            # Show binary file dialog
+            result = self.show_binary_file_dialog(os.path.basename(file_path))
+            if result == "cancel":
+                return
+            
+            # Open as read-only with raw content display
+            try:
+                with open(file_path, 'rb') as f:
+                    raw_bytes = f.read()
+                
+                # Convert to hex representation for display
+                # Show first 1KB in hex view format
+                hex_lines = []
+                hex_lines.append(f"# Binary file: {os.path.basename(file_path)}")
+                hex_lines.append(f"# Size: {len(raw_bytes)} bytes")
+                hex_lines.append(f"# This file is opened in read-only mode.")
+                hex_lines.append("")
+                
+                # Show hex dump of first 1KB
+                for i in range(0, min(len(raw_bytes), 1024), 16):
+                    chunk = raw_bytes[i:i+16]
+                    hex_part = ' '.join(f'{b:02x}' for b in chunk)
+                    ascii_part = ''.join(chr(b) if 32 <= b < 127 else '.' for b in chunk)
+                    hex_lines.append(f"{i:08x}  {hex_part:<48}  |{ascii_part}|")
+                
+                if len(raw_bytes) > 1024:
+                    hex_lines.append(f"\n... ({len(raw_bytes) - 1024} more bytes not shown)")
+                
+                content = '\n'.join(hex_lines)
+                
+                editor = self.add_tab(content, os.path.basename(file_path), file_path)
+                editor.is_binary = True
+                editor.is_readonly = True
+                editor.view.set_editable(False)  # Disable editing
+                editor.file_encoding = "Binary"
+                
+                if line is not None:
+                    self.goto_line(editor, line, column)
+                    
+            except Exception as e:
+                self.show_error(f"Error opening binary file: {e}")
+            return
 
+        # Text file - use safe file reading
+        try:
+            if encoding:
+                # User specified encoding
+                with open(file_path, "r", encoding=encoding) as f:
+                    content = f.read()
+                detected_encoding = encoding
+            else:
+                # Auto-detect encoding
+                detected_encoding, content, error = file_utils.detect_encoding(file_path)
+                if error:
+                    self.show_error(f"Error reading file: {error}")
+                    return
+            
             editor = self.add_tab(content, os.path.basename(file_path), file_path)
+            editor.file_encoding = detected_encoding
             last_text = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter(), True)
 
-            editor.last_buffer = hashlib.md5(last_text.encode(encoding if encoding else "UTF-8")).hexdigest()
+            try:
+                editor.last_buffer = hashlib.md5(last_text.encode(detected_encoding)).hexdigest()
+            except (UnicodeEncodeError, LookupError):
+                editor.last_buffer = hashlib.md5(last_text.encode('utf-8', errors='replace')).hexdigest()
+            
             if line is not None:
                 self.goto_line(editor, line, column)
             
@@ -2061,32 +2203,6 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             manager = Gtk.RecentManager.get_default()
             manager.add_item("file://" + file_path)
             
-        except UnicodeDecodeError:
-            # Fallback to Latin-1 or other permissive encoding
-            print(f"UTF-8 decode failed for {file_path}, trying ISO-8859-1")
-            try:
-                with open(file_path, "r", encoding="iso-8859-1") as f:
-                    content = f.read()
-                
-                # Warn user
-                dlg = Gtk.MessageDialog(parent=self, modal=True, message_type=Gtk.MessageType.WARNING,
-                                        buttons=Gtk.ButtonsType.OK, text="Encoding Warning")
-                dlg.format_secondary_text(f"The file '{os.path.basename(file_path)}' could not be opened as UTF-8.\nOpened using ISO-8859-1 fallback. Some characters may display incorrectly.")
-                dlg.run()
-                dlg.destroy()
-                
-                # If we failed to get content in fallback, maybe add empty?
-                # But here we are just adding what we got?
-                # Actually earlier code flow:
-                # self.add_tab(content, ...)
-                # So we should be consistent.
-                # Just capture it.
-                editor = self.add_tab(content, os.path.basename(file_path), file_path)
-                if line is not None:
-                    self.goto_line(editor, line, column)
-            except Exception as e:
-                self.show_error(f"Error opening binary/incompatible file: {e}")
-                
         except Exception as e:
             self.show_error(f"Error opening file: {e}")
 
@@ -2097,12 +2213,56 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         dlg.run()
         dlg.destroy()
 
+    def show_binary_file_dialog(self, filename):
+        """
+        Show dialog for binary file detection.
+        Returns: "readonly" to open read-only, "cancel" to abort
+        """
+        dlg = Gtk.MessageDialog(
+            parent=self,
+            modal=True,
+            message_type=Gtk.MessageType.WARNING,
+            buttons=Gtk.ButtonsType.NONE,
+            text="Binary File Detected"
+        )
+        dlg.format_secondary_text(
+            f"The file '{filename}' appears to be a binary or non-text file.\n\n"
+            "Opening it in text mode may display incorrectly and saving could corrupt the file."
+        )
+        dlg.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dlg.add_button("Open Read-Only", Gtk.ResponseType.OK)
+        
+        response = dlg.run()
+        dlg.destroy()
+        
+        if response == Gtk.ResponseType.OK:
+            return "readonly"
+        return "cancel"
+
     def on_save_file(self, widget, param=None):
         page_num = self.notebook.get_current_page()
         if page_num == -1:
             return
         
         editor = self.notebook.get_nth_page(page_num)
+        
+        # Prevent saving binary files (would corrupt them)
+        if getattr(editor, 'is_binary', False):
+            dlg = Gtk.MessageDialog(
+                parent=self,
+                modal=True,
+                message_type=Gtk.MessageType.WARNING,
+                buttons=Gtk.ButtonsType.OK,
+                text="Cannot Save Binary File"
+            )
+            dlg.format_secondary_text(
+                "This binary file is opened in read-only mode.\n"
+                "Saving would corrupt the file data."
+            )
+            dlg.run()
+            dlg.destroy()
+            return
+        
         last_text = editor.buffer.get_text(editor.buffer.get_start_iter(), editor.buffer.get_end_iter(), True)
 
         editor.last_buffer = hashlib.md5(last_text.encode("UTF-8")).hexdigest()
@@ -2238,6 +2398,13 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         self.update_statusbar(editor)
         self.update_language_label(editor) # Force update usage
         self.update_match_count(editor) # Update search count for this tab
+        
+        # Update encoding radio button (block handler to prevent reload)
+        self._updating_encoding_radio = True
+        enc = getattr(editor, 'file_encoding', 'UTF-8')
+        if enc in self.encoding_items:
+            self.encoding_items[enc].set_active(True)
+        self._updating_encoding_radio = False
         
         # Disconnect previous
         if getattr(self, "current_cursor_handler", None) and getattr(self, "current_buffer", None):

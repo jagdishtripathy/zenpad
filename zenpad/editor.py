@@ -25,6 +25,9 @@ class EditorTab(Gtk.ScrolledWindow):
         self.view = GtkSource.View.new_with_buffer(self.buffer)
         
         self.file_path = None
+        self.file_encoding = "UTF-8"  # Track file encoding
+        self.is_binary = False  # True if file is binary
+        self.is_readonly = False  # True if opened read-only (for binary files)
         
         # Connect to changed signal for auto-detection
         self.buffer.connect("changed", self.on_buffer_changed)
