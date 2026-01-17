@@ -2103,7 +2103,38 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         
         dialog.destroy()
 
+    def _close_empty_untitled_tab(self):
+        """
+        Close the current tab if it's an empty, unmodified Untitled tab.
+        This prevents tab clutter when opening files via GUI.
+        """
+        page_num = self.notebook.get_current_page()
+        if page_num == -1:
+            return
+        
+        editor = self.notebook.get_nth_page(page_num)
+        
+        # Check: is this an untitled tab? (no file path)
+        if editor.file_path:
+            return
+        
+        # Check: is the buffer empty?
+        start, end = editor.buffer.get_bounds()
+        content = editor.buffer.get_text(start, end, True)
+        if content.strip():  # Has content
+            return
+        
+        # Check: is it unmodified?
+        if editor.buffer.get_modified():
+            return
+        
+        # All conditions met - close this empty untitled tab
+        self.notebook.remove_page(page_num)
+
     def open_file_from_path(self, file_path, line=None, column=None, encoding=None, create_if_missing=True):
+        # Check if current tab is empty untitled - if so, close it first
+        self._close_empty_untitled_tab()
+        
         if not os.path.exists(file_path):
              # Warn user first
              dialog = Gtk.MessageDialog(
