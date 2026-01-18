@@ -28,6 +28,7 @@ class EditorTab(Gtk.ScrolledWindow):
         self.file_encoding = "UTF-8"  # Track file encoding
         self.is_binary = False  # True if file is binary
         self.is_readonly = False  # True if opened read-only (for binary files)
+        self.line_ending = "\n"  # Track line ending (LF, CRLF, CR)
         
         # Connect to changed signal for auto-detection
         self.buffer.connect("changed", self.on_buffer_changed)

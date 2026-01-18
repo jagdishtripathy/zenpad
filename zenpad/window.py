@@ -610,10 +610,25 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         le_menu = Gtk.Menu()
         le_item.set_submenu(le_menu)
         
-        for le, label in [("\n", "Unix (LF)"), ("\r\n", "Windows (CRLF)"), ("\r", "Mac (CR)")]:
-             item = Gtk.MenuItem(label=label)
-             item.connect("activate", self.on_change_line_ending, le)
-             le_menu.append(item)
+        self.line_ending_items = {}
+        line_endings = [("\n", "Unix (LF)"), ("\r\n", "Windows (CRLF)"), ("\r", "Mac (CR)")]
+        group = None
+        self._updating_line_ending_radio = True
+        for le, label in line_endings:
+            if group is None:
+                item = Gtk.RadioMenuItem(label=label)
+                group = item
+            else:
+                item = Gtk.RadioMenuItem(label=label, group=group)
+            item.connect("activate", self.on_change_line_ending, le)
+            le_menu.append(item)
+            self.line_ending_items[le] = item
+        # Set Unix (LF) as default
+        self.line_ending_items["\n"].set_active(True)
+        self._updating_line_ending_radio = False
+        
+        # Update radio selection when menu is shown
+        le_menu.connect("show", self.on_line_ending_menu_show)
         doc_menu.append(le_item)
         
         # Encoding Submenu
@@ -1258,9 +1273,44 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             editor.buffer.set_language(language)
 
     def on_change_line_ending(self, widget, le):
+        # Skip if we're just updating the radio during menu show
+        if getattr(self, '_updating_line_ending_radio', False):
+            return
+        
+        # Only act if this radio item is now active
+        if not widget.get_active():
+            return
+        
+        page_num = self.notebook.get_current_page()
+        if page_num == -1:
+            return
+        editor = self.notebook.get_nth_page(page_num)
+        
+        # Skip if line ending is already the same
+        current_le = getattr(editor, 'line_ending', '\n')
+        if current_le == le:
+            return
+        
+        # Update line ending for this editor
+        editor.line_ending = le
         self.doc_line_ending = le
-        # In reality, this would require converting buffer text
-        pass
+
+    def on_line_ending_menu_show(self, menu):
+        """Update line ending radio selection when menu is shown"""
+        page_num = self.notebook.get_current_page()
+        if page_num == -1:
+            return
+        editor = self.notebook.get_nth_page(page_num)
+        le = getattr(editor, 'line_ending', '\n')
+        
+        self._updating_line_ending_radio = True
+        if le in self.line_ending_items:
+            self.line_ending_items[le].set_active(True)
+        else:
+            # Default to Unix (LF) if not in list
+            self.line_ending_items["\n"].set_active(True)
+        self._updating_line_ending_radio = False
+
     def on_encoding_menu_show(self, menu):
         """Update encoding radio selection when menu is shown"""
         page_num = self.notebook.get_current_page()
