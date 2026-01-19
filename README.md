@@ -12,6 +12,7 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Development](#development)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Features
@@ -92,18 +93,46 @@ zenpad file1.py file2.js # Open multiple files
 
 **We actively invite the developer and cybersecurity communities to collaborate on Zenpad.** 
 
-We believe that the best software is built through transparency and rigorous testing. Whether you are interested in auditing the codebase for security vulnerabilities, optimizing GTK rendering performance, or implementing new features, your expertise is welcome here. Please feel free to fork the repository, submit pull requests, or open issues for any findings.
+We believe that the best software is built through transparency and rigorous testing. Whether you are interested in auditing the codebase for security vulnerabilities, optimizing GTK rendering performance, or implementing new features, your expertise is welcome here.
 
-To build the Debian package from source, ensure you have the necessary build tools installed:
+### Contributing
+
+Please read our **[Contributing Guide](CONTRIBUTING.md)** for detailed instructions on:
+
+- Setting up the development environment
+- Making changes and testing
+- Commit message guidelines
+- Submitting pull requests
+- Building the Debian package
+
+### Quick Start
+
+To run Zenpad from source for development:
+
+```bash
+# Clone the repository
+git clone https://github.com/jagdishtripathy/zenpad.git
+cd zenpad
+
+# Run from source
+python3 -m zenpad.main
+```
+
+### Build Debian Package
+
+Install the required build dependencies:
 
 ```bash
 sudo apt install build-essential fakeroot debhelper dh-python python3-all python3-gi gir1.2-gtksource-4
 ```
 
 Build the package:
+
 ```bash
 dpkg-buildpackage -us -uc
 ```
+
+The `.deb` file will be created in the parent directory.
 
 ## License
 
