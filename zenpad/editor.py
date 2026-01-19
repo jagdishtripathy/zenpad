@@ -182,20 +182,76 @@ class EditorTab(Gtk.ScrolledWindow):
 
         # Auto-Close Quotes
         if keyval in [Gdk.KEY_quotedbl, Gdk.KEY_apostrophe]:
-             # Only strictly auto-close if no selection? For now simple implementation.
              buff = self.buffer
              quote_char = '"' if keyval == Gdk.KEY_quotedbl else "'"
              
-             # Insert the pair
-             buff.insert_at_cursor(quote_char + quote_char)
-             
-             # Move cursor back by 1
              insert = buff.get_insert()
              iter_cur = buff.get_iter_at_mark(insert)
-             iter_cur.backward_char()
-             buff.place_cursor(iter_cur)
              
-             return True # Stop default handler (which would insert single char)
+             # Check if there's a selection - wrap selection with quotes
+             if buff.get_has_selection():
+                 start, end = buff.get_selection_bounds()
+                 selected_text = buff.get_text(start, end, False)
+                 buff.begin_user_action()
+                 buff.delete(start, end)
+                 buff.insert_at_cursor(quote_char + selected_text + quote_char)
+                 buff.end_user_action()
+                 return True
+             
+             # Type-Over Logic: If next char is the same quote, just move cursor
+             char_at_cursor = ""
+             if not iter_cur.is_end():
+                 iter_next = iter_cur.copy()
+                 iter_next.forward_char()
+                 char_at_cursor = buff.get_text(iter_cur, iter_next, False)
+             
+             if char_at_cursor == quote_char:
+                 # Move cursor forward instead of typing
+                 iter_cur.forward_char()
+                 buff.place_cursor(iter_cur)
+                 return True
+             
+             # Check context: Only auto-pair when appropriate
+             # Get character before cursor
+             char_before = ""
+             if not iter_cur.is_start():
+                 iter_prev = iter_cur.copy()
+                 iter_prev.backward_char()
+                 char_before = buff.get_text(iter_prev, iter_cur, False)
+             
+             # Characters that indicate we should auto-pair
+             # (at word boundary, after operators, brackets, or whitespace)
+             pair_after_chars = set(" \t\n({[,:;=<>!&|+-*/%^~")
+             # Characters that indicate we should NOT auto-pair after
+             # (alphanumeric - we're likely in the middle of a word)
+             no_pair_after = char_before.isalnum() or char_before == '_'
+             
+             # Check if we're at end of line or followed by appropriate chars
+             should_pair = False
+             pair_before_chars = set(" \t\n)}]:;,")
+             
+             if char_at_cursor == "" or char_at_cursor in pair_before_chars:
+                 # At end of line or followed by whitespace/closing brackets
+                 if char_before == "" or char_before in pair_after_chars or iter_cur.starts_line():
+                     should_pair = True
+                 elif not no_pair_after:
+                     should_pair = True
+             
+             if should_pair:
+                 # Insert the pair
+                 buff.begin_user_action()
+                 buff.insert_at_cursor(quote_char + quote_char)
+                 buff.end_user_action()
+                 
+                 # Move cursor back by 1
+                 insert = buff.get_insert()
+                 iter_cur = buff.get_iter_at_mark(insert)
+                 iter_cur.backward_char()
+                 buff.place_cursor(iter_cur)
+                 return True
+             
+             # Otherwise, just insert single quote (default behavior)
+             return False
 
         if keyval in [Gdk.KEY_Return, Gdk.KEY_KP_Enter]:
             if (event.state & Gdk.ModifierType.SHIFT_MASK) or (event.state & Gdk.ModifierType.CONTROL_MASK):
@@ -389,37 +445,64 @@ class EditorTab(Gtk.ScrolledWindow):
         # Auto-Pairing for Openers ( { [ )
         if keyval in [Gdk.KEY_braceleft, Gdk.KEY_bracketleft, Gdk.KEY_parenleft]:
             buff = self.buffer
-            lang = buff.get_language()
-            lang_id = lang.get_id() if lang else None
-            
-            # Apply generically for Code AND Untitled
-            # Avoid smart pairing only if user explicitly wants plain text behavior? 
-            # Zenpad seems to aim for "Smart Text Editor", so enabling by default for Untitled is safer for UX.
-            
-            should_pair = (lang_id is None) or (lang_id != "markdown") # Maybe exclude prose heavy? 
-            # Actually, standard VSCode pairs in markdown too usually.
-            
             insert = buff.get_insert()
             iter_cur = buff.get_iter_at_mark(insert)
             
             mapping = {
-                Gdk.KEY_braceleft: "{}",
-                Gdk.KEY_bracketleft: "[]",
-                Gdk.KEY_parenleft: "()"
+                Gdk.KEY_braceleft: ("{", "}"),
+                Gdk.KEY_bracketleft: ("[", "]"),
+                Gdk.KEY_parenleft: ("(", ")")
             }
             
-            pair = mapping.get(keyval)
-            if pair:
+            open_char, close_char = mapping.get(keyval)
+            
+            # Check if there's a selection - wrap selection with brackets
+            if buff.get_has_selection():
+                start, end = buff.get_selection_bounds()
+                selected_text = buff.get_text(start, end, False)
                 buff.begin_user_action()
-                buff.insert_at_cursor(pair)
+                buff.delete(start, end)
+                buff.insert_at_cursor(open_char + selected_text + close_char)
+                buff.end_user_action()
+                # Place cursor after closing bracket
+                return True
+            
+            # Check context: Get character after cursor
+            char_at_cursor = ""
+            if not iter_cur.is_end():
+                iter_next = iter_cur.copy()
+                iter_next.forward_char()
+                char_at_cursor = buff.get_text(iter_cur, iter_next, False)
+            
+            # Get character before cursor
+            char_before = ""
+            if not iter_cur.is_start():
+                iter_prev = iter_cur.copy()
+                iter_prev.backward_char()
+                char_before = buff.get_text(iter_prev, iter_cur, False)
+            
+            # Only auto-pair when in appropriate context (like VS Code)
+            # Don't auto-pair when followed by alphanumeric (in middle of word)
+            should_pair = True
+            
+            # Don't pair if cursor is immediately followed by alphanumeric or underscore
+            if char_at_cursor.isalnum() or char_at_cursor == '_':
+                should_pair = False
+            
+            if should_pair:
+                buff.begin_user_action()
+                buff.insert_at_cursor(open_char + close_char)
                 buff.end_user_action()
                 
-                # Move cursor back one step
+                # Move cursor back one step (between the brackets)
                 insert = buff.get_insert()
                 iter_back = buff.get_iter_at_mark(insert)
                 iter_back.backward_char()
                 buff.place_cursor(iter_back)
                 return True
+            
+            # If not pairing, just let default handler insert the open bracket
+            return False
             
         return False
     
