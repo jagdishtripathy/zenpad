@@ -19,14 +19,14 @@ Thank you for your interest in contributing to Zenpad! This guide will walk you 
 
 ### 1. Fork the Repository
 
-1. Go to [https://github.com/YOUR_USERNAME/zenpad](https://github.com/jagdishtripathy/zenpad)
+1. Go to [https://github.com/jagdishtripathy/zenpad](https://github.com/jagdishtripathy/zenpad)
 2. Click the **Fork** button in the top-right corner
 3. This creates a copy of the repository in your GitHub account
 
 ### 2. Clone Your Fork
 
 ```bash
-git clone https://github.com/jagdishtripathy/zenpad.git
+git clone https://github.com/YOUR_USERNAME/zenpad.git
 cd zenpad
 ```
 
