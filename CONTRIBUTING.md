@@ -26,7 +26,7 @@ Thank you for your interest in contributing to Zenpad! This guide will walk you 
 ### 2. Clone Your Fork
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/zenpad.git
+git clone https://github.com/jagdishtripathy/zenpad.git
 cd zenpad
 ```
 
