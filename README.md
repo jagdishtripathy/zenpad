@@ -77,7 +77,7 @@ sudo apt-get install -f
 ### Source Installation
 
 ```bash
-pip install .
+pip install . # for local development only
 ```
 
 ## Usage
