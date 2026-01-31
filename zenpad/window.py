@@ -15,6 +15,13 @@ from zenpad import file_utils  # Binary detection and encoding
 from gi.repository import GtkSource
 from gi.repository import Pango
 
+# Zenpacks (optional - graceful fallback if not available)
+try:
+    from zenpad.zenpacks import ZenpackManager
+    ZENPACKS_AVAILABLE = True
+except ImportError:
+    ZENPACKS_AVAILABLE = False
+
 class ZenpadWindow(Gtk.ApplicationWindow):
     def __init__(self, application):
         super().__init__(application=application, title="Zenpad")
@@ -91,10 +98,14 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         # Add Language Indicator Label
         self.language_label = Gtk.Label(label="Plain Text")
         self.language_label.set_margin_end(10)
+        # Add Zenpack Label (for zenpacks like word count)
+        self.zenpack_label = Gtk.Label(label="")
+        self.zenpack_label.set_margin_end(10)
         # Pack at END of the box (GtkStatusbar is a GtkBox)
         # Note: Gtk.Statusbar structure usually has a message_area (first child).
         # We can pack_end to push it to the right corner.
         self.statusbar.pack_end(self.language_label, False, False, 0)
+        self.statusbar.pack_end(self.zenpack_label, False, False, 0)
         main_box.pack_end(self.statusbar, False, True, 0)
         
         # Shortcuts
@@ -108,6 +119,19 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         config_dir = os.path.join(os.path.expanduser("~"), ".config", "zenpad")
         self.session_manager = SessionManager(config_dir)
         
+        # Initialize Zenpacks BEFORE session restore (tabs trigger hooks)
+        self.zenpack_manager = None
+        if ZENPACKS_AVAILABLE:
+            zenpacks_enabled = self.settings.get("zenpacks_enabled")
+            if zenpacks_enabled is None:
+                zenpacks_enabled = True  # Default to enabled
+            if zenpacks_enabled:
+                try:
+                    self.zenpack_manager = ZenpackManager(self)
+                    self.zenpack_manager.load_enabled_zenpacks()
+                except Exception as e:
+                    print(f"[Zenpacks] Failed to initialize: {e}")
+        
         # Load Session or Add initial empty tab
         # Skip if files are being opened via command line
         has_pending_files = hasattr(self.get_application(), 'pending_files') and self.get_application().pending_files
@@ -118,6 +142,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                     self.add_tab()  # Fallback to empty tab
             else:
                 self.add_tab()
+        
+        # Emit startup hook AFTER session restore
+        if self.zenpack_manager:
+            self.zenpack_manager.emit_hook("on_startup")
         
         self.show_all()
 
@@ -2284,6 +2312,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             manager = Gtk.RecentManager.get_default()
             manager.add_item("file://" + file_path)
             
+            # Emit Zenpack hook (non-breaking)
+            if self.zenpack_manager:
+                self.zenpack_manager.emit_hook("on_file_open", file_path)
+            
         except Exception as e:
             self.show_error(f"Error opening file: {e}")
 
@@ -2407,6 +2439,11 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             editor.buffer.set_modified(False) # Mark as saved
             editor.detect_language(path)
             self.update_tab_label(editor)
+            
+            # Emit Zenpack hook (non-breaking)
+            if self.zenpack_manager:
+                self.zenpack_manager.emit_hook("on_file_save", path)
+                
         except PermissionError:
             self.show_error(f"Permission denied: Cannot write to '{path}'.\nCheck file permissions or run as administrator.")
         except Exception as e:
@@ -2503,6 +2540,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
         # Update Markdown Preview if open
         if self.md_window and self.md_window.is_visible():
             self.md_window.update_content(editor.get_text())
+        
+        # Emit Zenpack hook (non-breaking)
+        if self.zenpack_manager:
+            self.zenpack_manager.emit_hook("on_tab_switch", page_num)
 
     def update_title(self, editor):
         filename = os.path.basename(editor.file_path) if editor.file_path else "Untitled"
@@ -2613,6 +2654,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
             else:
                 # Clear session file - nothing to restore
                 self.session_manager.clear()
+        
+        # Shutdown Zenpacks (non-breaking)
+        if self.zenpack_manager:
+            self.zenpack_manager.shutdown()
             
         return False  # Allow closing
 
@@ -2976,6 +3021,10 @@ class ZenpadWindow(Gtk.ApplicationWindow):
                 active_editor = self.notebook.get_nth_page(page_num)
                 if active_editor == editor:
                     self.md_window.update_content(editor.get_text())
+        
+        # Emit Zenpack hook (non-breaking)
+        if self.zenpack_manager:
+            self.zenpack_manager.emit_hook("on_text_changed")
 
     def on_compare_tabs(self, action, parameter):
         current_page = self.notebook.get_current_page()

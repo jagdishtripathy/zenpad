@@ -1,10 +1,12 @@
 # Zenpad
 
-![Version 1.5.0](https://img.shields.io/badge/version-1.5.0-blue.svg)
-![License GPL-2.0](https://img.shields.io/badge/license-GPL--2.0-green.svg)
-![Platform Linux](https://img.shields.io/badge/platform-linux-lightgrey.svg)
+![Platform](https://img.shields.io/badge/PLATFORM-LINUX-blue?style=flat-square&labelColor=333)
+![Built With](https://img.shields.io/badge/PYTHON-GTK+-green?style=flat-square&labelColor=333)
+![Editor](https://img.shields.io/badge/EDITOR-GtkSourceView%204-orange?style=flat-square&labelColor=333)
+![Version](https://img.shields.io/badge/VERSION-1.5.0-yellow?style=flat-square&labelColor=333)
+![License](https://img.shields.io/badge/LICENSE-GPL--2.0-brightgreen?style=flat-square&labelColor=333)
 
-**Zenpad** is a lightweight, keyboard-driven text editor for the Linux desktop, built with Python and GTK+. Designed to provide a distraction-free environment for power users and developers, it combines the speed of a simple notepad with IDE-inspired keyboard shortcuts for fast navigation, text manipulation, and efficient editing. Unlike traditional click-based editors, Zenpad focuses on a keyboard-centric workflow to maximize productivity.
+**Zenpad** is a keyboard-first text editor for developers who find traditional editors like gedit or mousepad too mouse-dependent. Built with Python and GTK+, it brings IDE-level keyboard navigation to a lightweight notepad—duplicate lines with `Ctrl+D`, delete lines instantly with `Ctrl+Shift+K`, jump between tabs without touching your mouse, and never lose your work with automatic session restore.
 
 ## Table of Contents
 - [Features](#features)
@@ -12,21 +14,27 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Development](#development)
+- [Contributing](#contributing)
+- [Changelog](#changelog)
+- [Code of Conduct](#code-of-conduct)
 - [License](#license)
 
 ## Features
 
-Zenpad leverages `GtkSourceView 4` to provide robust text editing capabilities while maintaining a minimal footprint.
+### What Zenpad Does That Others Don't
 
-*   **Syntax Highlighting:** Support for over 100 programming languages.
-*   **Multi-Tab Interface:** Efficiently manage multiple files in a single window.
-*   **Smart Editing:**
-    *   Automatic indentation and bracket matching.
-    *   Configurable word wrap and line numbering.
-    *   Toggleable "Highlight Current Line" for focused editing.
-*   **Search and Replace:** Incremental search with real-time occurrence counting.
-*   **Session Persistence:** Automatically restores open tabs and window state across sessions.
-*   **System Integration:** Seamlessly integrates with Linux desktop themes and workflows.
+*   **Keyboard-First Editing:** IDE shortcuts in a lightweight editor—`Ctrl+D` to duplicate lines, `Ctrl+Shift+K` to delete lines, `Ctrl+/` to toggle comments. No reaching for the mouse.
+*   **Session Memory:** Close Zenpad with 10 tabs open, reopen it tomorrow—all tabs restored exactly where you left off. gedit doesn't do this.
+*   **Smart Auto-Pairing:** Context-aware bracket and quote completion. Type `(` after a word? Just inserts `(`. At end of line? Inserts `()` and places cursor inside. Select text and press `"`? Wraps it.
+*   **Binary File Safety:** Open a `.exe` or image by accident? Zenpad detects it, shows a hex preview, and prevents corruption. Other editors just show garbage.
+*   **Encoding Intelligence:** Auto-detects UTF-8, Windows-1252, ISO-8859-1. Switch encodings on the fly without closing the file.
+*   **Real-Time Search Stats:** See "3 of 47 matches" as you type—incremental search with live occurrence counting.
+
+### Core Capabilities
+
+*   **Syntax Highlighting:** 100+ languages via GtkSourceView 4.
+*   **Multi-Tab Interface:** Manage multiple files with keyboard navigation (`Ctrl+Page Up/Down`).
+*   **Distraction-Free:** No toolbars if you don't want them. Toggle everything with keyboard shortcuts.
 
 ## Requirements
 
@@ -69,7 +77,7 @@ sudo apt-get install -f
 ### Source Installation
 
 ```bash
-pip install .
+pip install . # for local development only
 ```
 
 ## Usage
@@ -92,18 +100,54 @@ zenpad file1.py file2.js # Open multiple files
 
 **We actively invite the developer and cybersecurity communities to collaborate on Zenpad.** 
 
-We believe that the best software is built through transparency and rigorous testing. Whether you are interested in auditing the codebase for security vulnerabilities, optimizing GTK rendering performance, or implementing new features, your expertise is welcome here. Please feel free to fork the repository, submit pull requests, or open issues for any findings.
+We believe that the best software is built through transparency and rigorous testing. Whether you are interested in auditing the codebase for security vulnerabilities, optimizing GTK rendering performance, or implementing new features, your expertise is welcome here.
 
-To build the Debian package from source, ensure you have the necessary build tools installed:
+### Contributing
+
+Please read our **[Contributing Guide](CONTRIBUTING.md)** for detailed instructions on:
+
+- Setting up the development environment
+- Making changes and testing
+- Commit message guidelines
+- Submitting pull requests
+- Building the Debian package
+
+### Quick Start
+
+To run Zenpad from source for development:
+
+```bash
+# Clone the repository
+git clone https://github.com/jagdishtripathy/zenpad.git
+cd zenpad
+
+# Run from source
+python3 -m zenpad.main
+```
+
+### Build Debian Package
+
+Install the required build dependencies:
 
 ```bash
 sudo apt install build-essential fakeroot debhelper dh-python python3-all python3-gi gir1.2-gtksource-4
 ```
 
 Build the package:
+
 ```bash
 dpkg-buildpackage -us -uc
 ```
+
+The `.deb` file will be created in the parent directory.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes and version releases.
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ## License
 

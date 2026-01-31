@@ -600,6 +600,16 @@ class EditorTab(Gtk.ScrolledWindow):
         # Indent
         menu.append(make_item("Increase Indent", invoke_action("indent"), "Tab"))
         menu.append(make_item("Decrease Indent", invoke_action("unindent"), "Shift+Tab"))
+        menu.append(Gtk.SeparatorMenuItem())
+        
+        # Insert Emoji - Use GTK's built-in emoji chooser
+        def show_emoji_chooser(w):
+            # GTK has built-in emoji chooser support via insert_emoji() method
+            self.view.emit('insert-emoji')
+        
+        menu.append(make_item("Insert Emoji...", show_emoji_chooser, "Ctrl+."))
+
+
         
         menu.show_all()
         menu.popup_at_pointer(event)

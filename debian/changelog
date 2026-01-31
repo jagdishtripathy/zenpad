@@ -1,4 +1,4 @@
-zenpad (1.5.0) unstable; urgency=medium
+zenpad (1.5.0-0ubuntu1) focal; urgency=medium
 
   * New Feature: Tab switching shortcuts (Ctrl+Tab, Ctrl+Shift+Tab)
   * New Feature: Editor preferences (Right Margin, Brackets, Whitespace, Smart Backspace)
